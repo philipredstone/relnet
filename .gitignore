@@ -3,7 +3,12 @@ frontend/dist
 frontend/.env
 frontend/bun.lockb
 
+.vscode
+.idea
+
 node_modules
 dist
 .env
-bun.lockb
+*bun.lockb
+*yarn.lock
+*package-lock.json
