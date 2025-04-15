@@ -17,11 +17,9 @@ router.get('/', networkController.getUserNetworks);
 // @desc    Create a new network
 // @access  Private
 router.post(
-    '/',
-    [
-        check('name', 'Network name is required').not().isEmpty(),
-    ],
-    networkController.createNetwork
+  '/',
+  [check('name', 'Network name is required').not().isEmpty()],
+  networkController.createNetwork
 );
 
 // @route   GET /api/networks/:id
@@ -33,11 +31,9 @@ router.get('/:id', networkController.getNetwork);
 // @desc    Update a network
 // @access  Private
 router.put(
-    '/:id',
-    [
-        check('name', 'Network name is required if provided').optional().not().isEmpty(),
-    ],
-    networkController.updateNetwork
+  '/:id',
+  [check('name', 'Network name is required if provided').optional().not().isEmpty()],
+  networkController.updateNetwork
 );
 
 // @route   DELETE /api/networks/:id

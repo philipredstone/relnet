@@ -4,6 +4,6 @@ import { INetwork } from '../models/network.model';
 import { Document } from 'mongoose';
 
 export interface UserRequest extends Request {
-    user?: IUser;
-    network?: INetwork;
+  user?: IUser;
+  network?: INetwork;
 }

@@ -1,0 +1,19 @@
+# Ignore build outputs
+/dist
+/build
+
+# Ignore dependencies
+/node_modules
+
+# Ignore coverage reports
+/coverage
+
+# Ignore logs
+*.log
+
+# Ignore frontend (it has its own Prettier config)
+/frontend
+
+# Ignore configuration files
+.env
+.env.*

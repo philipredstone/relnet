@@ -9,25 +9,25 @@ const router = express.Router();
 // @desc    Register a new user
 // @access  Public
 router.post(
-    '/register',
-    [
-        check('email', 'Please include a valid email').isEmail(),
-        check('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
-        check('username', 'Username is required').not().isEmpty(),
-    ],
-    authController.register
+  '/register',
+  [
+    check('email', 'Please include a valid email').isEmail(),
+    check('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
+    check('username', 'Username is required').not().isEmpty(),
+  ],
+  authController.register
 );
 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
 router.post(
-    '/login',
-    [
-        check('email', 'Please include a valid email').isEmail(),
-        check('password', 'Password is required').exists(),
-    ],
-    authController.login
+  '/login',
+  [
+    check('email', 'Please include a valid email').isEmail(),
+    check('password', 'Password is required').exists(),
+  ],
+  authController.login
 );
 
 // @route   POST /api/auth/logout

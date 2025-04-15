@@ -18,26 +18,26 @@ router.get('/:networkId/people', peopleController.getPeople);
 // @desc    Add a person to the network
 // @access  Private
 router.post(
-    '/:networkId/people',
-    [
-        check('firstName', 'First name is required').not().isEmpty(),
-        check('lastName', 'Last name is required').not().isEmpty(),
-        check('birthday', 'Birthday must be a valid date if provided').optional().isISO8601().toDate(),
-    ],
-    peopleController.addPerson
+  '/:networkId/people',
+  [
+    check('firstName', 'First name is required').not().isEmpty(),
+    check('lastName', 'Last name is required').not().isEmpty(),
+    check('birthday', 'Birthday must be a valid date if provided').optional().isISO8601().toDate(),
+  ],
+  peopleController.addPerson
 );
 
 // @route   PUT /api/networks/:networkId/people/:id
 // @desc    Update a person
 // @access  Private
 router.put(
-    '/:networkId/people/:id',
-    [
-        check('firstName', 'First name must not be empty if provided').optional().not().isEmpty(),
-        check('lastName', 'Last name must not be empty if provided').optional().not().isEmpty(),
-        check('birthday', 'Birthday must be a valid date if provided').optional().isISO8601().toDate(),
-    ],
-    peopleController.updatePerson
+  '/:networkId/people/:id',
+  [
+    check('firstName', 'First name must not be empty if provided').optional().not().isEmpty(),
+    check('lastName', 'Last name must not be empty if provided').optional().not().isEmpty(),
+    check('birthday', 'Birthday must be a valid date if provided').optional().isISO8601().toDate(),
+  ],
+  peopleController.updatePerson
 );
 
 // @route   DELETE /api/networks/:networkId/people/:id

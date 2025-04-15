@@ -1,0 +1,16 @@
+# Ignore build outputs
+/dist
+/build
+
+# Ignore dependencies
+/node_modules
+
+# Ignore coverage reports
+/coverage
+
+# Ignore logs
+*.log
+
+# Ignore configuration files
+.env
+.env.*
