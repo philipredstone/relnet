@@ -38,4 +38,10 @@ COPY --from=frontend-builder /frontend/dist/ /app/frontend/dist
 COPY --from=backend-builder /app/dist /app/dist
 COPY package.json .
 
+ENV PORT=80
+ENV MONGODB_URI=mongodb://db:27017/friendship-network
+ENV JWT_SECRET=7hPqh6pS91WCQY
+ENV APP_URL=http://localhost:80
+ENV ENABLE_REGISTRATION=true
+
 CMD ["yarn", "run", "start"]

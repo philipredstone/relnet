@@ -1,0 +1,26 @@
+networks:
+  internal:
+    internal: true
+
+services:
+  relnet:
+    image: github.com/philipredstone/relnet:latest
+    build: .
+    ports:
+      - "80:80"
+    networks:
+      - internal
+    environment:
+      - PORT=80
+      - MONGODB_URI=mongodb://relnet-db:27017/friendship-network
+      - JWT_SECRET=your_jwt_secret_key_change_this
+      - APP_URL=http://localhost:80
+      - ENABLE_REGISTRATION=true
+
+  relnet-db:
+    image: mongo:latest
+    networks:
+      - internal
+    restart: always
+    volumes:
+      - db:/data/db
