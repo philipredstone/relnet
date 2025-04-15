@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const protocol = window.location.protocol;
+const hostname = window.location.hostname;
+const port = window.location.port;
+
+const API_URL = protocol + '//' + hostname + (port ? ':' + port : '') + '/api';
 
 // Types
 export interface Person {

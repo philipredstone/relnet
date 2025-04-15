@@ -1,0 +1,9 @@
+frontend/node_modules
+frontend/dist
+frontend/.env
+frontend/bun.lockb
+
+node_modules
+dist
+.env
+bun.lockb
