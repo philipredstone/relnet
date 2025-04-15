@@ -39,7 +39,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (!process.env.ENABLE_REGISTRATION) {
-      res.status(403).json({ errors: ['Registration is disabled'] });
+      res.status(400).json({ message: 'Registration is disabled' });
       return;
     }
 
