@@ -1,0 +1,16 @@
+Copyright (c) 2025 Tobias Hopp and Philip Rothstein
+
+All rights reserved.
+
+Permission is hereby granted to use the software as is for personal and internal organizational purposes only. Any modification, redistribution (whether modified or unmodified), or commercial exploitation of the software, including incorporation into other products or services, is strictly prohibited unless a written permission has been obtained from the copyright owner.
+
+Restrictions:
+
+    Modification: You may not modify, alter, or create derivative works of the software without prior written consent.
+
+    Redistribution: You may not redistribute or sublicense any version of the software without obtaining explicit permission.
+
+    Commercial Use: Any form of commercial exploitation, including selling or licensing the software or its derivatives, is not allowed without a separate licensing agreement.
+
+Disclaimer:
+This software is provided "as is", without warranty of any kind, express or implied. In no event shall the copyright owner be liable for any claim, damages, or other liability.
