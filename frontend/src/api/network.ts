@@ -7,11 +7,16 @@ const port = window.location.port;
 const API_URL = protocol + '//' + hostname + (port ? ':' + port : '') + '/api';
 
 // Types
+export interface NetworkOwner {
+    _id: string;
+    username: string;
+}
+
 export interface Network {
     _id: string;
     name: string;
     description?: string;
-    owner: string;
+    owner: string | NetworkOwner; // Can be either string ID or populated object
     isPublic: boolean;
     createdAt: string;
     updatedAt: string;

@@ -3,7 +3,7 @@ import Network from '../models/network.model';
 import { UserRequest } from '../types/express';
 import { validationResult } from 'express-validator';
 
-// Get all networks for current user
+// Get all networks for current user and all public networks
 export const getUserNetworks = async (req: UserRequest, res: Response): Promise<void> => {
     try {
         if (!req.user) {
@@ -11,7 +11,15 @@ export const getUserNetworks = async (req: UserRequest, res: Response): Promise<
             return;
         }
 
-        const networks = await Network.find({ owner: req.user._id });
+        // Find networks that either:
+        // 1. Belong to the current user, OR
+        // 2. Are public networks (created by any user)
+        const networks = await Network.find({
+            $or: [
+                { owner: req.user._id },
+                { isPublic: true }
+            ]
+        }).populate('owner', 'username _id'); // Populate owner field with username
 
         res.json({ success: true, data: networks });
     } catch (error) {
@@ -63,7 +71,7 @@ export const getNetwork = async (req: UserRequest, res: Response): Promise<void>
             return;
         }
 
-        const network = await Network.findById(networkId);
+        const network = await Network.findById(networkId).populate('owner', 'username _id');
 
         if (!network) {
             res.status(404).json({ message: 'Network not found' });
@@ -71,7 +79,7 @@ export const getNetwork = async (req: UserRequest, res: Response): Promise<void>
         }
 
         // Check if user is owner or network is public
-        if (network.owner.toString() !== req.user._id.toString() && !network.isPublic) {
+        if (network.owner._id.toString() !== req.user._id.toString() && !network.isPublic) {
             res.status(403).json({ message: 'You do not have permission to access this network' });
             return;
         }

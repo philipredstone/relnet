@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNetworks } from '../../context/NetworkContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const NetworkList: React.FC = () => {
     const { networks, loading, error, createNetwork, deleteNetwork } = useNetworks();
+    const { user } = useAuth();
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newNetworkName, setNewNetworkName] = useState('');
     const [newNetworkDescription, setNewNetworkDescription] = useState('');
@@ -153,40 +155,117 @@ const NetworkList: React.FC = () => {
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {networks.map((network) => (
-                        <div key={network._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                            <div className="p-4">
-                                <h2 className="text-xl font-bold mb-2">{network.name}</h2>
-                                {network.description && (
-                                    <p className="text-gray-600 mb-4">{network.description}</p>
-                                )}
-                                <div className="flex items-center mb-4">
-                  <span className={`px-2 py-1 rounded-full text-xs ${network.isPublic ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {network.isPublic ? 'Public' : 'Private'}
-                  </span>
-                                    <span className="text-xs text-gray-500 ml-2">
-                    Created: {new Date(network.createdAt).toLocaleDateString()}
-                  </span>
-                                </div>
-                                <div className="flex space-x-2">
-                                    <button
-                                        className="flex-1 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded"
-                                        onClick={() => navigate(`/networks/${network._id}`)}
-                                    >
-                                        View
-                                    </button>
-                                    <button
-                                        className="flex-1 bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded"
-                                        onClick={() => handleDeleteNetwork(network._id)}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                <>
+                    {/* My Networks Section */}
+                    <div className="mb-8">
+                        <h2 className="text-xl font-semibold mb-4">My Networks</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {networks
+                                .filter(network => {
+                                    if (!user) return false;
+                                    const ownerId = typeof network.owner === 'string' 
+                                        ? network.owner 
+                                        : network.owner._id;
+                                    return ownerId === user.id;
+                                })
+                                .map((network) => (
+                                    <div key={network._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                                        <div className="p-4">
+                                            <h2 className="text-xl font-bold mb-2">{network.name}</h2>
+                                            {network.description && (
+                                                <p className="text-gray-600 mb-4">{network.description}</p>
+                                            )}
+                                            <div className="flex items-center mb-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${network.isPublic ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                                    {network.isPublic ? 'Public' : 'Private'}
+                                                </span>
+                                                <span className="text-xs text-gray-500 ml-2">
+                                                    Created: {new Date(network.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex space-x-2">
+                                                <button
+                                                    className="flex-1 bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded"
+                                                    onClick={() => navigate(`/networks/${network._id}`)}
+                                                >
+                                                    View
+                                                </button>
+                                                <button
+                                                    className="flex-1 bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded"
+                                                    onClick={() => handleDeleteNetwork(network._id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                        {networks.filter(network => {
+                            if (!user) return false;
+                            const ownerId = typeof network.owner === 'string' 
+                                ? network.owner 
+                                : network.owner._id;
+                            return ownerId === user.id;
+                        }).length === 0 && (
+                            <p className="text-gray-600 mb-4">You haven't created any networks yet.</p>
+                        )}
+                    </div>
+
+                    {/* Public Networks Section */}
+                    {networks.some(network => {
+                        if (!user) return false;
+                        const ownerId = typeof network.owner === 'string'
+                            ? network.owner
+                            : network.owner._id;
+                        return ownerId !== user.id;
+                    }) && (
+                        <div>
+                            <h2 className="text-xl font-semibold mb-4">Public Networks From Others</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {networks
+                                    .filter(network => {
+                                        if (!user) return false;
+                                        const ownerId = typeof network.owner === 'string'
+                                            ? network.owner
+                                            : network.owner._id;
+                                        return ownerId !== user.id;
+                                    })
+                                    .map((network) => (
+                                        <div key={network._id} className="bg-white rounded-lg shadow-md overflow-hidden border-l-4 border-green-500">
+                                            <div className="p-4">
+                                                <h2 className="text-xl font-bold mb-2">{network.name}</h2>
+                                                {network.description && (
+                                                    <p className="text-gray-600 mb-4">{network.description}</p>
+                                                )}
+                                                <div className="flex items-center mb-4">
+                                                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                                        Public
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 ml-2">
+                                                        Created: {new Date(network.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 ml-2">
+                                                        By: {typeof network.owner === 'string' 
+                                                            ? 'Unknown' 
+                                                            : network.owner.username}
+                                                    </span>
+                                                </div>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        className="w-full bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded"
+                                                        onClick={() => navigate(`/networks/${network._id}`)}
+                                                    >
+                                                        View
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                             </div>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
         </div>
     );
