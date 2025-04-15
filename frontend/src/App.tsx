@@ -5,7 +5,7 @@ import { NetworkProvider } from './context/NetworkContext';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import NetworkList from './components/networks/NetworkList';
-import FriendshipNetwork from './components/FriendshipNetwork'; // Your existing component
+import FriendshipNetwork from './components/FriendshipNetwork';
 import Header from './components/layout/Header';
 
 // Protected route component

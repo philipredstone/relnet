@@ -4,9 +4,12 @@ networks:
   traefik:
     external: true
 
+volumes:
+  db:
+
 services:
   relnet:
-    image: github.com/philipredstone/relnet:latest
+    image: ghcr.io/philipredstone/relnet:latest
     build: .
     networks:
       - internal
