@@ -2,6 +2,9 @@ networks:
   internal:
     internal: true
 
+volumes:
+  db:
+
 services:
   relnet:
     image: ghcr.io/philipredstone/relnet:latest

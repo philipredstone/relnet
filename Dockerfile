@@ -33,14 +33,14 @@ RUN yarn run build
 
 
 # Final stage
-FROM node:22
-COPY --from=frontend-builder /frontend/dist/ /app/frontend/dist
-COPY --from=backend-builder /app/dist /app/dist
+FROM node:22-slim
+COPY --from=frontend-builder /frontend/dist/ frontend/dist
+COPY --from=backend-builder /app/dist/ dist/
+COPY --from=backend-builder /app/node_modules node_modules
 COPY package.json .
 
 ENV PORT=80
 ENV MONGODB_URI=mongodb://db:27017/friendship-network
-ENV JWT_SECRET=7hPqh6pS91WCQY
 ENV APP_URL=http://localhost:80
 ENV ENABLE_REGISTRATION=true
 
