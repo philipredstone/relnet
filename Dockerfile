@@ -9,7 +9,7 @@ COPY frontend/src/ src/
 COPY frontend/package.json .
 COPY frontend/index.html .
 COPY frontend/tsconfig.json .
-COPY frontend/vite.config.js .
+COPY frontend/vite.config.mjs .
 
 # Install libs
 RUN yarn install
