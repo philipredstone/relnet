@@ -3,7 +3,6 @@ import Person from '../models/person.model';
 import Relationship from '../models/relationship.model';
 import { UserRequest } from '../types/express';
 import { validationResult } from 'express-validator';
-import mongoose from 'mongoose';
 
 // Get all people in a network
 export const getPeople = async (req: UserRequest, res: Response): Promise<void> => {
