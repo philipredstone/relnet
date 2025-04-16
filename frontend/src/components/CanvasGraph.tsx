@@ -35,9 +35,9 @@ interface CanvasGraphProps {
 }
 
 // Physics constants
-const NODE_RADIUS = 30; // Node radius in pixels
-const MIN_DISTANCE = 100; // Minimum distance between any two nodes
-const MAX_DISTANCE = 300; // Maximum distance between connected nodes
+const NODE_RADIUS = 45; // Node radius in pixels
+const MIN_DISTANCE = 110; // Minimum distance between any two nodes
+const MAX_DISTANCE = 500; // Maximum distance between connected nodes
 const REPULSION_STRENGTH = 500; // How strongly nodes repel each other when too close
 const ATTRACTION_STRENGTH = 0.1; // Default attraction between connected nodes
 const CONSTRAINT_STRENGTH = 0.2; // Strength of distance constraints
@@ -573,9 +573,9 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height, zoomLeve
       ctx.stroke();
 
       // Draw initials
-      const initials = `${node.firstName.charAt(0)}${node.lastName.charAt(0)}`;
+      const initials = `${node.firstName} ${node.lastName.charAt(0)}.`;
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(initials, pos.x, pos.y);
