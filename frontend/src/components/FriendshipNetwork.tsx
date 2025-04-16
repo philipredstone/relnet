@@ -32,37 +32,23 @@ import {
 
 // Import custom UI components
 import {
-  Button, Card, CardBody, ConfirmDialog, EmptyState, FormField, Modal, NetworkStats, Toast, ToastItem, Tooltip,
+  Button,
+  Card,
+  CardBody,
+  ConfirmDialog,
+  EmptyState,
+  FormField,
+  Modal,
+  NetworkStats,
+  Toast,
+  ToastItem,
+  Tooltip,
 } from './FriendshipNetworkComponents';
 
 // Import visible canvas graph component
 import CanvasGraph from './CanvasGraph';
-import { RELATIONSHIP_LABELS, RELATIONSHIP_TYPES } from '../api/relationships';
-
-interface PersonNode {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  birthday?: Date | string | null;
-  notes?: string;
-  position?: {
-    x: number; y: number;
-  };
-}
-// Type for form errors
-interface FormErrors {
-  [key: string]: string;
-}
-
-// Graph appearance constants
-const RELATIONSHIP_COLORS = {
-  freund: '#60A5FA', // Light blue
-  partner: '#F472B6', // Pink
-  familie: '#34D399', // Green
-  arbeitskolleg: '#FBBF24', // Yellow
-  custom: '#9CA3AF', // Gray
-};
-
+import { RELATIONSHIP_COLORS, RELATIONSHIP_LABELS, RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
+import { FormErrors, PersonNode } from '../interfaces/IPersonNode';
 
 
 // Main FriendshipNetwork component

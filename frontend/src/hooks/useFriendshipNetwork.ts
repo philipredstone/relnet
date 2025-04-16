@@ -3,10 +3,11 @@ import { addPerson, getPeople, Person, removePerson, updatePerson } from '../api
 import {
   addRelationship,
   getRelationships,
-  Relationship, RELATIONSHIP_TYPES,
   removeRelationship,
   updateRelationship,
 } from '../api/relationships';
+import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
+import { Relationship } from '../interfaces/IRelationship';
 
 interface PersonNode extends Person {
   // Additional properties needed for the visualization

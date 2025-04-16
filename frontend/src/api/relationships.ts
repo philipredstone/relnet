@@ -1,28 +1,12 @@
 import axios from 'axios';
+import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
+import { Relationship } from '../interfaces/IRelationship';
 
 const protocol = window.location.protocol;
 const hostname = window.location.hostname;
 const port = window.location.port;
 
 const API_URL = protocol + '//' + hostname + (port ? ':' + port : '') + '/api';
-
-export type RELATIONSHIP_TYPES = 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
-
-export const RELATIONSHIP_LABELS = {
-  freund: 'Friend', partner: 'Partner', familie: 'Family', arbeitskolleg: 'Colleague', custom: 'Custom',
-};
-
-// Types
-export interface Relationship {
-  _id: string;
-  source: string;
-  target: string;
-  type: RELATIONSHIP_TYPES;
-  customType?: string;
-  network: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface CreateRelationshipData {
   source: string;
