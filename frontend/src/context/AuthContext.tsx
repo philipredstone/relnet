@@ -1,12 +1,12 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import {
-  User,
   getCurrentUser,
   login as apiLogin,
-  register as apiRegister,
-  logout as apiLogout,
   LoginData,
+  logout as apiLogout,
+  register as apiRegister,
   RegisterData,
+  User,
 } from '../api/auth';
 
 interface AuthContextProps {

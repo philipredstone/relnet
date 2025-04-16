@@ -44,7 +44,7 @@ export const getUserNetworks = async (): Promise<Network[]> => {
 export const createNetwork = async (data: CreateNetworkData): Promise<Network> => {
   const response = await axios.post<{ success: boolean; data: Network }>(
     `${API_URL}/networks`,
-    data
+    data,
   );
   return response.data.data;
 };
@@ -52,7 +52,7 @@ export const createNetwork = async (data: CreateNetworkData): Promise<Network> =
 // Get a specific network
 export const getNetwork = async (id: string): Promise<Network> => {
   const response = await axios.get<{ success: boolean; data: Network }>(
-    `${API_URL}/networks/${id}`
+    `${API_URL}/networks/${id}`,
   );
   return response.data.data;
 };
@@ -61,7 +61,7 @@ export const getNetwork = async (id: string): Promise<Network> => {
 export const updateNetwork = async (id: string, data: UpdateNetworkData): Promise<Network> => {
   const response = await axios.put<{ success: boolean; data: Network }>(
     `${API_URL}/networks/${id}`,
-    data
+    data,
   );
   return response.data.data;
 };

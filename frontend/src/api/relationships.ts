@@ -33,7 +33,7 @@ export interface UpdateRelationshipData {
 // Get all relationships in a network
 export const getRelationships = async (networkId: string): Promise<Relationship[]> => {
   const response = await axios.get<{ success: boolean; data: Relationship[] }>(
-    `${API_URL}/networks/${networkId}/relationships`
+    `${API_URL}/networks/${networkId}/relationships`,
   );
   return response.data.data;
 };
@@ -41,11 +41,11 @@ export const getRelationships = async (networkId: string): Promise<Relationship[
 // Add a relationship to the network
 export const addRelationship = async (
   networkId: string,
-  data: CreateRelationshipData
+  data: CreateRelationshipData,
 ): Promise<Relationship> => {
   const response = await axios.post<{ success: boolean; data: Relationship }>(
     `${API_URL}/networks/${networkId}/relationships`,
-    data
+    data,
   );
   return response.data.data;
 };
@@ -54,11 +54,11 @@ export const addRelationship = async (
 export const updateRelationship = async (
   networkId: string,
   relationshipId: string,
-  data: UpdateRelationshipData
+  data: UpdateRelationshipData,
 ): Promise<Relationship> => {
   const response = await axios.put<{ success: boolean; data: Relationship }>(
     `${API_URL}/networks/${networkId}/relationships/${relationshipId}`,
-    data
+    data,
   );
   return response.data.data;
 };
@@ -66,7 +66,7 @@ export const updateRelationship = async (
 // Remove a relationship
 export const removeRelationship = async (
   networkId: string,
-  relationshipId: string
+  relationshipId: string,
 ): Promise<void> => {
   await axios.delete(`${API_URL}/networks/${networkId}/relationships/${relationshipId}`);
 };

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNetworks } from '../../context/NetworkContext';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaNetworkWired, FaTrash, FaEye, FaGlobe, FaLock, FaTimes } from 'react-icons/fa';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FaEye, FaGlobe, FaLock, FaNetworkWired, FaPlus, FaTimes, FaTrash } from 'react-icons/fa';
 
 const NetworkList: React.FC = () => {
   const { networks, loading, error, createNetwork, deleteNetwork } = useNetworks();

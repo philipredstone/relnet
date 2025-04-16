@@ -145,7 +145,7 @@ const FriendshipNetwork: React.FC = () => {
     refreshNetwork,
     updatePersonPosition: updatePersonPositionImpl = (
       id: string,
-      position: { x: number; y: number }
+      position: { x: number; y: number },
     ) => {
       console.warn('updatePersonPosition not implemented');
       return Promise.resolve();
@@ -336,7 +336,7 @@ const FriendshipNetwork: React.FC = () => {
 
   // Filtered people and relationships
   const filteredPeople = people.filter(person =>
-    `${person.firstName} ${person.lastName}`.toLowerCase().includes(peopleFilter.toLowerCase())
+    `${person.firstName} ${person.lastName}`.toLowerCase().includes(peopleFilter.toLowerCase()),
   );
 
   const filteredRelationships = relationships.filter(rel => {
@@ -430,17 +430,17 @@ const FriendshipNetwork: React.FC = () => {
     // Create nodes
     const graphNodes = people.map(person => {
       const connectionCount = relationships.filter(
-        r => r.source === person._id || r.target === person._id
+        r => r.source === person._id || r.target === person._id,
       ).length;
 
       // Determine if node should be highlighted
       const isSelected = person._id === selectedPersonId;
       const isConnected = selectedPersonId
         ? relationships.some(
-            r =>
-              (r.source === selectedPersonId && r.target === person._id) ||
-              (r.target === selectedPersonId && r.source === person._id)
-          )
+          r =>
+            (r.source === selectedPersonId && r.target === person._id) ||
+            (r.target === selectedPersonId && r.source === person._id),
+        )
         : false;
 
       // Determine background color based on connection count or highlight state
@@ -540,7 +540,7 @@ const FriendshipNetwork: React.FC = () => {
           (r.source === relationship.source && r.target === relationship.target) ||
           (relationship.bidirectional &&
             r.source === relationship.target &&
-            r.target === relationship.source)
+            r.target === relationship.source),
       );
 
       if (existingRelationship) {
@@ -728,7 +728,8 @@ const FriendshipNetwork: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-screen bg-slate-900">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 border-solid rounded-full animate-spin"></div>
+          <div
+            className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 border-solid rounded-full animate-spin"></div>
           <p className="text-white text-lg">Loading your network...</p>
         </div>
       </div>
@@ -953,7 +954,7 @@ const FriendshipNetwork: React.FC = () => {
                   {sortedPeople.length > 0 ? (
                     sortedPeople.map(person => {
                       const connectionCount = relationships.filter(
-                        r => r.source === person._id || r.target === person._id
+                        r => r.source === person._id || r.target === person._id,
                       ).length;
 
                       return (
@@ -1668,7 +1669,7 @@ const FriendshipNetwork: React.FC = () => {
               <h4 className="font-medium text-indigo-400 mb-2">Connections</h4>
               <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-900 rounded-lg p-2">
                 {relationships.filter(
-                  r => r.source === editPerson._id || r.target === editPerson._id
+                  r => r.source === editPerson._id || r.target === editPerson._id,
                 ).length > 0 ? (
                   relationships
                     .filter(r => r.source === editPerson._id || r.target === editPerson._id)
