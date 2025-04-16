@@ -32,17 +32,7 @@ import {
 
 // Import custom UI components
 import {
-  Button,
-  Card,
-  CardBody,
-  ConfirmDialog,
-  EmptyState,
-  FormField,
-  Modal,
-  NetworkStats,
-  Toast,
-  ToastItem,
-  Tooltip,
+  Button, Card, CardBody, ConfirmDialog, EmptyState, FormField, Modal, NetworkStats, Toast, ToastItem, Tooltip,
 } from './FriendshipNetworkComponents';
 
 // Import visible canvas graph component
@@ -58,8 +48,7 @@ interface PersonNode {
   birthday?: Date | string | null;
   notes?: string;
   position?: {
-    x: number;
-    y: number;
+    x: number; y: number;
   };
 }
 
@@ -71,36 +60,6 @@ interface RelationshipEdge {
   customType?: string;
   notes?: string;
 }
-
-interface CanvasGraphProps {
-  data: {
-    nodes: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      connectionCount: number;
-      bgColor: string;
-      x: number;
-      y: number;
-      showLabel: boolean;
-    }[];
-    edges: {
-      id: string;
-      source: string;
-      target: string;
-      color: string;
-      width: number;
-      type: RelationshipType;
-      customType?: string;
-    }[];
-  };
-  width: number;
-  height: number;
-  zoomLevel: number;
-  onNodeClick: (nodeId: string) => void;
-  onNodeDrag: (nodeId: string, x: number, y: number) => void;
-}
-
 // Type for form errors
 interface FormErrors {
   [key: string]: string;
@@ -116,11 +75,7 @@ const RELATIONSHIP_COLORS = {
 };
 
 const RELATIONSHIP_LABELS = {
-  freund: 'Friend',
-  partner: 'Partner',
-  familie: 'Family',
-  arbeitskolleg: 'Colleague',
-  custom: 'Custom',
+  freund: 'Friend', partner: 'Partner', familie: 'Family', arbeitskolleg: 'Colleague', custom: 'Custom',
 };
 
 // Main FriendshipNetwork component
@@ -143,10 +98,7 @@ const FriendshipNetwork: React.FC = () => {
     createRelationship,
     deleteRelationship,
     refreshNetwork,
-    updatePersonPosition: updatePersonPositionImpl = (
-      id: string,
-      position: { x: number; y: number },
-    ) => {
+    updatePersonPosition: updatePersonPositionImpl = (id: string, position: { x: number; y: number }) => {
       console.warn('updatePersonPosition not implemented');
       return Promise.resolve();
     },
@@ -172,8 +124,7 @@ const FriendshipNetwork: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: string; id: string }>({
-    type: '',
-    id: '',
+    type: '', id: '',
   });
 
   // Form errors
@@ -182,21 +133,13 @@ const FriendshipNetwork: React.FC = () => {
 
   // Form states
   const [newPerson, setNewPerson] = useState({
-    firstName: '',
-    lastName: '',
-    birthday: null as Date | null,
-    notes: '',
+    firstName: '', lastName: '', birthday: null as Date | null, notes: '',
   });
 
   const [editPerson, setEditPerson] = useState<PersonNode | null>(null);
 
   const [newRelationship, setNewRelationship] = useState({
-    source: '',
-    target: '',
-    type: 'freund' as RelationshipType,
-    customType: '',
-    notes: '',
-    bidirectional: true,
+    source: '', target: '', type: 'freund' as RelationshipType, customType: '', notes: '', bidirectional: true,
   });
 
   // Filter states
@@ -335,9 +278,7 @@ const FriendshipNetwork: React.FC = () => {
   }, []);
 
   // Filtered people and relationships
-  const filteredPeople = people.filter(person =>
-    `${person.firstName} ${person.lastName}`.toLowerCase().includes(peopleFilter.toLowerCase()),
-  );
+  const filteredPeople = people.filter(person => `${person.firstName} ${person.lastName}`.toLowerCase().includes(peopleFilter.toLowerCase()));
 
   const filteredRelationships = relationships.filter(rel => {
     const source = people.find(p => p._id === rel.source);
@@ -345,10 +286,9 @@ const FriendshipNetwork: React.FC = () => {
 
     if (!source || !target) return false;
 
-    const matchesFilter =
-      `${source.firstName} ${source.lastName} ${target.firstName} ${target.lastName}`
-        .toLowerCase()
-        .includes(relationshipFilter.toLowerCase());
+    const matchesFilter = `${source.firstName} ${source.lastName} ${target.firstName} ${target.lastName}`
+      .toLowerCase()
+      .includes(relationshipFilter.toLowerCase());
 
     const matchesType = relationshipTypeFilter === 'all' || rel.type === relationshipTypeFilter;
 
@@ -385,21 +325,17 @@ const FriendshipNetwork: React.FC = () => {
       const theta = index * 2.399;
       const radius = maxRadius * 0.5 * Math.sqrt(index / (totalNodes + 1));
       return {
-        x: centerX + radius * Math.cos(theta),
-        y: centerY + radius * Math.sin(theta),
+        x: centerX + radius * Math.cos(theta), y: centerY + radius * Math.sin(theta),
       };
     } else if (totalNodes <= 11) {
       const isOuterRing = index >= Math.floor(totalNodes / 2);
       const ringIndex = isOuterRing ? index - Math.floor(totalNodes / 2) : index;
-      const ringTotal = isOuterRing
-        ? totalNodes - Math.floor(totalNodes / 2) + 1
-        : Math.floor(totalNodes / 2);
+      const ringTotal = isOuterRing ? totalNodes - Math.floor(totalNodes / 2) + 1 : Math.floor(totalNodes / 2);
       const ringRadius = isOuterRing ? maxRadius * 0.8 : maxRadius * 0.4;
 
       const angle = (ringIndex / ringTotal) * 2 * Math.PI + (isOuterRing ? 0 : Math.PI / ringTotal);
       return {
-        x: centerX + ringRadius * Math.cos(angle),
-        y: centerY + ringRadius * Math.sin(angle),
+        x: centerX + ringRadius * Math.cos(angle), y: centerY + ringRadius * Math.sin(angle),
       };
     } else {
       const clusterCount = Math.max(3, Math.floor(Math.sqrt(totalNodes)));
@@ -415,8 +351,7 @@ const FriendshipNetwork: React.FC = () => {
       const randomDistance = Math.random() * clusterRadius;
 
       return {
-        x: clusterX + randomDistance * Math.cos(randomAngle),
-        y: clusterY + randomDistance * Math.sin(randomAngle),
+        x: clusterX + randomDistance * Math.cos(randomAngle), y: clusterY + randomDistance * Math.sin(randomAngle),
       };
     }
   }, [graphDimensions.width, graphDimensions.height, people.length]);
@@ -424,24 +359,16 @@ const FriendshipNetwork: React.FC = () => {
   // Transform API data to graph format
   const getGraphData = useCallback(() => {
     if (!people || !relationships) {
-      return { nodes: [], edges: [] };
+      return { nodes: [], edges: [], links: [] };
     }
 
     // Create nodes
     const graphNodes = people.map(person => {
-      const connectionCount = relationships.filter(
-        r => r.source === person._id || r.target === person._id,
-      ).length;
+      const connectionCount = relationships.filter(r => r.source === person._id || r.target === person._id).length;
 
       // Determine if node should be highlighted
       const isSelected = person._id === selectedPersonId;
-      const isConnected = selectedPersonId
-        ? relationships.some(
-          r =>
-            (r.source === selectedPersonId && r.target === person._id) ||
-            (r.target === selectedPersonId && r.source === person._id),
-        )
-        : false;
+      const isConnected = selectedPersonId ? relationships.some(r => (r.source === selectedPersonId && r.target === person._id) || (r.target === selectedPersonId && r.source === person._id)) : false;
 
       // Determine background color based on connection count or highlight state
       let bgColor;
@@ -479,23 +406,16 @@ const FriendshipNetwork: React.FC = () => {
       const width = rel.type === 'partner' ? 4 : rel.type === 'familie' ? 3 : 2;
 
       // Highlight edges connected to selected node
-      const isHighlighted =
-        selectedPersonId &&
-        settings.highlightConnections &&
-        (rel.source === selectedPersonId || rel.target === selectedPersonId);
+      const isHighlighted = selectedPersonId && settings.highlightConnections && (rel.source === selectedPersonId || rel.target === selectedPersonId);
 
       return {
-        id: rel._id,
-        source: rel.source,
-        target: rel.target,
-        color: isHighlighted ? '#F472B6' : color, // Pink color for highlighted edges
+        id: rel._id, source: rel.source, target: rel.target, color: isHighlighted ? '#F472B6' : color, // Pink color for highlighted edges
         width: isHighlighted ? width + 1 : width, // Slightly thicker for highlighted
-        type: rel.type,
-        customType: rel.customType,
+        type: rel.type, customType: rel.customType,
       };
     });
 
-    return { nodes: graphNodes, edges: graphEdges };
+    return { nodes: graphNodes, edges: graphEdges, links: [] };
   }, [people, relationships, settings.showLabels, settings.highlightConnections, selectedPersonId]);
 
   // Validate person form
@@ -535,13 +455,7 @@ const FriendshipNetwork: React.FC = () => {
 
     // Check if relationship already exists
     if (relationship.source && relationship.target) {
-      const existingRelationship = relationships.find(
-        r =>
-          (r.source === relationship.source && r.target === relationship.target) ||
-          (relationship.bidirectional &&
-            r.source === relationship.target &&
-            r.target === relationship.source),
-      );
+      const existingRelationship = relationships.find(r => (r.source === relationship.source && r.target === relationship.target) || (relationship.bidirectional && r.source === relationship.target && r.target === relationship.source));
 
       if (existingRelationship) {
         errors.general = 'This relationship already exists';
@@ -573,10 +487,7 @@ const FriendshipNetwork: React.FC = () => {
 
     // Reset form and close modal
     setNewPerson({
-      firstName: '',
-      lastName: '',
-      birthday: null,
-      notes: '',
+      firstName: '', lastName: '', birthday: null, notes: '',
     });
 
     setPersonModalOpen(false);
@@ -619,32 +530,19 @@ const FriendshipNetwork: React.FC = () => {
 
     // Create the relationship
     createRelationship({
-      source,
-      target,
-      type,
-      customType: type === 'custom' ? customType : undefined,
-      notes,
+      source, target, type, customType: type === 'custom' ? customType : undefined, notes,
     });
 
     // Create bidirectional relationship if selected
     if (bidirectional && source !== target) {
       createRelationship({
-        source: target,
-        target: source,
-        type,
-        customType: type === 'custom' ? customType : undefined,
-        notes,
+        source: target, target: source, type, customType: type === 'custom' ? customType : undefined, notes,
       });
     }
 
     // Reset form and close modal
     setNewRelationship({
-      source: '',
-      target: '',
-      type: 'freund',
-      customType: '',
-      notes: '',
-      bidirectional: true,
+      source: '', target: '', type: 'freund', customType: '', notes: '', bidirectional: true,
     });
 
     setRelationshipModalOpen(false);
@@ -725,21 +623,18 @@ const FriendshipNetwork: React.FC = () => {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-slate-900">
+    return (<div className="flex justify-center items-center h-screen bg-slate-900">
         <div className="flex flex-col items-center space-y-4">
           <div
             className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 border-solid rounded-full animate-spin"></div>
           <p className="text-white text-lg">Loading your network...</p>
         </div>
-      </div>
-    );
+      </div>);
   }
 
   // Error state
   if (error) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-slate-900">
+    return (<div className="flex justify-center items-center h-screen bg-slate-900">
         <div className="bg-red-500/20 border border-red-500 text-white p-6 rounded-lg shadow-lg max-w-md">
           <h3 className="text-lg font-bold mb-3 flex items-center">
             <FaExclamationTriangle className="mr-2 text-red-500" /> Error
@@ -754,15 +649,13 @@ const FriendshipNetwork: React.FC = () => {
             Back to Networks
           </Button>
         </div>
-      </div>
-    );
+      </div>);
   }
 
   // Generate graph data
   const graphData = getGraphData();
 
-  return (
-    <div className="flex h-screen bg-slate-900 text-white overflow-hidden">
+  return (<div className="flex h-screen bg-slate-900 text-white overflow-hidden">
       {/* Sidebar Toggle Button */}
       <button
         onClick={toggleSidebar}
@@ -832,31 +725,19 @@ const FriendshipNetwork: React.FC = () => {
             {/* Sidebar Tabs */}
             <div className="flex border-b border-slate-700 mb-4">
               <button
-                className={`flex-1 py-2 font-medium flex items-center justify-center ${
-                  sidebarTab === 'overview'
-                    ? 'text-indigo-400 border-b-2 border-indigo-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${sidebarTab === 'overview' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-slate-300'}`}
                 onClick={() => setSidebarTab('overview')}
               >
                 <FaInfo className="mr-2" /> Overview
               </button>
               <button
-                className={`flex-1 py-2 font-medium flex items-center justify-center ${
-                  sidebarTab === 'people'
-                    ? 'text-indigo-400 border-b-2 border-indigo-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${sidebarTab === 'people' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-slate-300'}`}
                 onClick={() => setSidebarTab('people')}
               >
                 <FaUserCircle className="mr-2" /> People
               </button>
               <button
-                className={`flex-1 py-2 font-medium flex items-center justify-center ${
-                  sidebarTab === 'relations'
-                    ? 'text-indigo-400 border-b-2 border-indigo-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${sidebarTab === 'relations' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400 hover:text-slate-300'}`}
                 onClick={() => setSidebarTab('relations')}
               >
                 <FaUserFriends className="mr-2" /> Relations
@@ -864,8 +745,7 @@ const FriendshipNetwork: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            {sidebarTab === 'overview' && (
-              <div className="space-y-4">
+            {sidebarTab === 'overview' && (<div className="space-y-4">
                 <Card>
                   <CardBody>
                     <h3 className="font-medium mb-2 text-indigo-400">About This Network</h3>
@@ -907,8 +787,7 @@ const FriendshipNetwork: React.FC = () => {
                           <span className="capitalize">
                             {RELATIONSHIP_LABELS[type as RelationshipType]}
                           </span>
-                        </div>
-                      ))}
+                        </div>))}
                     </div>
                   </CardBody>
                 </Card>
@@ -931,11 +810,9 @@ const FriendshipNetwork: React.FC = () => {
                     Help
                   </Button>
                 </div>
-              </div>
-            )}
+              </div>)}
 
-            {sidebarTab === 'people' && (
-              <div>
+            {sidebarTab === 'people' && (<div>
                 <div className="flex items-center mb-3">
                   <div className="relative flex-1">
                     <input
@@ -951,23 +828,13 @@ const FriendshipNetwork: React.FC = () => {
                 </div>
 
                 <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto pr-1">
-                  {sortedPeople.length > 0 ? (
-                    sortedPeople.map(person => {
-                      const connectionCount = relationships.filter(
-                        r => r.source === person._id || r.target === person._id,
-                      ).length;
+                  {sortedPeople.length > 0 ? (sortedPeople.map(person => {
+                      const connectionCount = relationships.filter(r => r.source === person._id || r.target === person._id).length;
 
-                      return (
-                        <div
+                      return (<div
                           key={person._id}
                           className={`bg-slate-700 rounded-lg p-3 group hover:bg-slate-600 transition-colors 
-                          cursor-pointer border-l-4 ${
-                            selectedPersonId === person._id
-                              ? 'border-l-pink-500'
-                              : connectionCount > 0
-                                ? 'border-l-indigo-500'
-                                : 'border-l-slate-700'
-                          }`}
+                          cursor-pointer border-l-4 ${selectedPersonId === person._id ? 'border-l-pink-500' : connectionCount > 0 ? 'border-l-indigo-500' : 'border-l-slate-700'}`}
                           onClick={() => {
                             openPersonDetail(person);
                             setSelectedPersonId(person._id);
@@ -1013,38 +880,24 @@ const FriendshipNetwork: React.FC = () => {
                               </Tooltip>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <EmptyState
+                        </div>);
+                    })) : (<EmptyState
                       title={peopleFilter ? 'No matches found' : 'No people yet'}
-                      description={
-                        peopleFilter
-                          ? 'Try adjusting your search criteria'
-                          : 'Add people to start building your network'
-                      }
+                      description={peopleFilter ? 'Try adjusting your search criteria' : 'Add people to start building your network'}
                       icon={<FaUserCircle className="text-2xl text-slate-400" />}
-                      action={
-                        !peopleFilter && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => setPersonModalOpen(true)}
-                            icon={<FaUserPlus />}
-                          >
-                            Add Person
-                          </Button>
-                        )
-                      }
-                    />
-                  )}
+                      action={!peopleFilter && (<Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setPersonModalOpen(true)}
+                          icon={<FaUserPlus />}
+                        >
+                          Add Person
+                        </Button>)}
+                    />)}
                 </div>
-              </div>
-            )}
+              </div>)}
 
-            {sidebarTab === 'relations' && (
-              <div>
+            {sidebarTab === 'relations' && (<div>
                 <div className="flex items-center mb-3">
                   <div className="relative flex-1">
                     <input
@@ -1061,23 +914,14 @@ const FriendshipNetwork: React.FC = () => {
 
                 <div className="flex mb-3 overflow-x-auto pb-2 space-x-1">
                   <button
-                    className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
-                      relationshipTypeFilter === 'all'
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
+                    className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${relationshipTypeFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                     onClick={() => setRelationshipTypeFilter('all')}
                   >
                     All Types
                   </button>
-                  {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (
-                    <button
+                  {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (<button
                       key={type}
-                      className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex items-center ${
-                        relationshipTypeFilter === type
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                      }`}
+                      className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex items-center ${relationshipTypeFilter === type ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                       onClick={() => setRelationshipTypeFilter(type as RelationshipType)}
                     >
                       <span
@@ -1087,26 +931,19 @@ const FriendshipNetwork: React.FC = () => {
                       <span className="capitalize">
                         {RELATIONSHIP_LABELS[type as RelationshipType]}
                       </span>
-                    </button>
-                  ))}
+                    </button>))}
                 </div>
 
                 <div className="space-y-2 max-h-[calc(100vh-390px)] overflow-y-auto pr-1">
-                  {filteredRelationships.length > 0 ? (
-                    filteredRelationships.map(rel => {
+                  {filteredRelationships.length > 0 ? (filteredRelationships.map(rel => {
                       const source = people.find(p => p._id === rel.source);
                       const target = people.find(p => p._id === rel.target);
                       if (!source || !target) return null;
 
-                      return (
-                        <div
+                      return (<div
                           key={rel._id}
                           className={`bg-slate-700 rounded-lg p-3 group hover:bg-slate-600 transition-colors 
-                          border-l-4 ${
-                            selectedPersonId === rel.source || selectedPersonId === rel.target
-                              ? 'border-l-pink-500'
-                              : 'border-l-slate-700'
-                          }`}
+                          border-l-4 ${selectedPersonId === rel.source || selectedPersonId === rel.target ? 'border-l-pink-500' : 'border-l-slate-700'}`}
                         >
                           <div className="flex justify-between items-center">
                             <div>
@@ -1140,9 +977,7 @@ const FriendshipNetwork: React.FC = () => {
                                   style={{ backgroundColor: RELATIONSHIP_COLORS[rel.type] }}
                                 ></span>
                                 <span className="capitalize">
-                                  {rel.type === 'custom'
-                                    ? rel.customType
-                                    : RELATIONSHIP_LABELS[rel.type]}
+                                  {rel.type === 'custom' ? rel.customType : RELATIONSHIP_LABELS[rel.type]}
                                 </span>
                               </div>
                             </div>
@@ -1157,40 +992,22 @@ const FriendshipNetwork: React.FC = () => {
                               </Tooltip>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <EmptyState
-                      title={
-                        relationshipFilter || relationshipTypeFilter !== 'all'
-                          ? 'No matches found'
-                          : 'No relationships yet'
-                      }
-                      description={
-                        relationshipFilter || relationshipTypeFilter !== 'all'
-                          ? 'Try adjusting your search criteria'
-                          : 'Create relationships between people to visualize connections'
-                      }
+                        </div>);
+                    })) : (<EmptyState
+                      title={relationshipFilter || relationshipTypeFilter !== 'all' ? 'No matches found' : 'No relationships yet'}
+                      description={relationshipFilter || relationshipTypeFilter !== 'all' ? 'Try adjusting your search criteria' : 'Create relationships between people to visualize connections'}
                       icon={<FaUserFriends className="text-2xl text-slate-400" />}
-                      action={
-                        !relationshipFilter &&
-                        relationshipTypeFilter === 'all' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => setRelationshipModalOpen(true)}
-                            icon={<FaUserFriends />}
-                          >
-                            Add Relationship
-                          </Button>
-                        )
-                      }
-                    />
-                  )}
+                      action={!relationshipFilter && relationshipTypeFilter === 'all' && (<Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setRelationshipModalOpen(true)}
+                          icon={<FaUserFriends />}
+                        >
+                          Add Relationship
+                        </Button>)}
+                    />)}
                 </div>
-              </div>
-            )}
+              </div>)}
           </div>
         </Transition>
       </div>
@@ -1200,9 +1017,7 @@ const FriendshipNetwork: React.FC = () => {
         {graphDimensions.width <= 0 || graphDimensions.height <= 0 ? (
           <div className="w-full h-full flex justify-center items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-          </div>
-        ) : (
-          <CanvasGraph
+          </div>) : (<CanvasGraph
             data={graphData}
             width={graphDimensions.width}
             height={graphDimensions.height}
@@ -1211,8 +1026,7 @@ const FriendshipNetwork: React.FC = () => {
             onNodeDrag={(nodeId, x, y) => {
               updatePersonPosition(nodeId, { x, y }).then();
             }}
-          />
-        )}
+          />)}
 
         {/* Empty state overlay */}
         {people.length === 0 && (
@@ -1234,12 +1048,10 @@ const FriendshipNetwork: React.FC = () => {
                 Add Your First Person
               </Button>
             </div>
-          </div>
-        )}
+          </div>)}
 
         {/* Interaction hint */}
-        {people.length > 0 && interactionHint && (
-          <div
+        {people.length > 0 && interactionHint && (<div
             className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-indigo-900/90 
           text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center space-x-2 animate-pulse"
           >
@@ -1251,8 +1063,7 @@ const FriendshipNetwork: React.FC = () => {
             >
               <FaTimes />
             </button>
-          </div>
-        )}
+          </div>)}
 
         {/* Graph controls */}
         <div className="absolute bottom-6 right-6 flex flex-col space-y-3">
@@ -1330,8 +1141,7 @@ const FriendshipNetwork: React.FC = () => {
           {personFormErrors.general && (
             <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
               {personFormErrors.general}
-            </div>
-          )}
+            </div>)}
 
           <FormField label="First Name" id="firstName" required error={personFormErrors.firstName}>
             <input
@@ -1363,7 +1173,7 @@ const FriendshipNetwork: React.FC = () => {
                 id="birthday"
                 selected={newPerson.birthday}
                 onChange={date => setNewPerson({ ...newPerson, birthday: date })}
-                dateFormat="MMMM d, yyyy"
+                dateFormat="dd.MM.yyyy"
                 placeholderText="Select birthday"
                 className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
                 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
@@ -1416,8 +1226,7 @@ const FriendshipNetwork: React.FC = () => {
           {relationshipFormErrors.general && (
             <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
               {relationshipFormErrors.general}
-            </div>
-          )}
+            </div>)}
 
           <FormField
             label="Source Person"
@@ -1433,11 +1242,9 @@ const FriendshipNetwork: React.FC = () => {
               onChange={e => setNewRelationship({ ...newRelationship, source: e.target.value })}
             >
               <option value="">Select person</option>
-              {sortedPeople.map(person => (
-                <option key={`source-${person._id}`} value={person._id}>
+              {sortedPeople.map(person => (<option key={`source-${person._id}`} value={person._id}>
                   {person.firstName} {person.lastName}
-                </option>
-              ))}
+                </option>))}
             </select>
           </FormField>
 
@@ -1455,11 +1262,9 @@ const FriendshipNetwork: React.FC = () => {
               onChange={e => setNewRelationship({ ...newRelationship, target: e.target.value })}
             >
               <option value="">Select person</option>
-              {sortedPeople.map(person => (
-                <option key={`target-${person._id}`} value={person._id}>
+              {sortedPeople.map(person => (<option key={`target-${person._id}`} value={person._id}>
                   {person.firstName} {person.lastName}
-                </option>
-              ))}
+                </option>))}
             </select>
           </FormField>
 
@@ -1469,23 +1274,17 @@ const FriendshipNetwork: React.FC = () => {
               className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
               focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
               value={newRelationship.type}
-              onChange={e =>
-                setNewRelationship({
-                  ...newRelationship,
-                  type: e.target.value as RelationshipType,
-                })
-              }
+              onChange={e => setNewRelationship({
+                ...newRelationship, type: e.target.value as RelationshipType,
+              })}
             >
-              {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
+              {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (<option key={value} value={value}>
                   {label}
-                </option>
-              ))}
+                </option>))}
             </select>
           </FormField>
 
-          {newRelationship.type === 'custom' && (
-            <FormField
+          {newRelationship.type === 'custom' && (<FormField
               label="Custom Type"
               id="customType"
               required
@@ -1498,15 +1297,11 @@ const FriendshipNetwork: React.FC = () => {
                 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
                 placeholder="Enter custom relationship type"
                 value={newRelationship.customType}
-                onChange={e =>
-                  setNewRelationship({
-                    ...newRelationship,
-                    customType: e.target.value,
-                  })
-                }
+                onChange={e => setNewRelationship({
+                  ...newRelationship, customType: e.target.value,
+                })}
               />
-            </FormField>
-          )}
+            </FormField>)}
 
           <FormField label="Notes (Optional)" id="relationNotes">
             <textarea
@@ -1525,12 +1320,9 @@ const FriendshipNetwork: React.FC = () => {
               id="bidirectional"
               className="h-4 w-4 rounded border-gray-500 text-indigo-600 focus:ring-indigo-500 bg-slate-700"
               checked={newRelationship.bidirectional}
-              onChange={e =>
-                setNewRelationship({
-                  ...newRelationship,
-                  bidirectional: e.target.checked,
-                })
-              }
+              onChange={e => setNewRelationship({
+                ...newRelationship, bidirectional: e.target.checked,
+              })}
             />
             <label htmlFor="bidirectional" className="ml-2 block text-sm text-gray-300">
               Create bidirectional relationship (recommended)
@@ -1555,8 +1347,7 @@ const FriendshipNetwork: React.FC = () => {
       </Modal>
 
       {/* Person Detail Modal */}
-      {editPerson && (
-        <Modal
+      {editPerson && (<Modal
           isOpen={personDetailModalOpen}
           onClose={() => {
             setPersonDetailModalOpen(false);
@@ -1571,8 +1362,7 @@ const FriendshipNetwork: React.FC = () => {
                 {personFormErrors.general && (
                   <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
                     {personFormErrors.general}
-                  </div>
-                )}
+                  </div>)}
 
                 <FormField
                   label="First Name"
@@ -1612,7 +1402,7 @@ const FriendshipNetwork: React.FC = () => {
                       id="editBirthday"
                       selected={editPerson.birthday ? new Date(editPerson.birthday) : null}
                       onChange={date => setEditPerson({ ...editPerson, birthday: date })}
-                      dateFormat="MMMM d, yyyy"
+                      dateFormat="dd.MM.yyyy"
                       placeholderText="Select birthday"
                       className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
                       focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
@@ -1668,10 +1458,7 @@ const FriendshipNetwork: React.FC = () => {
             <div>
               <h4 className="font-medium text-indigo-400 mb-2">Connections</h4>
               <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-900 rounded-lg p-2">
-                {relationships.filter(
-                  r => r.source === editPerson._id || r.target === editPerson._id,
-                ).length > 0 ? (
-                  relationships
+                {relationships.filter(r => r.source === editPerson._id || r.target === editPerson._id).length > 0 ? (relationships
                     .filter(r => r.source === editPerson._id || r.target === editPerson._id)
                     .map(rel => {
                       const isSource = rel.source === editPerson._id;
@@ -1680,8 +1467,7 @@ const FriendshipNetwork: React.FC = () => {
 
                       if (!otherPerson) return null;
 
-                      return (
-                        <div
+                      return (<div
                           key={rel._id}
                           className="flex justify-between items-center py-1 px-2 hover:bg-slate-800 rounded"
                         >
@@ -1705,9 +1491,7 @@ const FriendshipNetwork: React.FC = () => {
                               >
                                 {otherPerson.firstName} {otherPerson.lastName}
                               </span>
-                              {rel.type === 'custom'
-                                ? ` (${rel.customType})`
-                                : ` (${RELATIONSHIP_LABELS[rel.type]})`}
+                              {rel.type === 'custom' ? ` (${rel.customType})` : ` (${RELATIONSHIP_LABELS[rel.type]})`}
                             </span>
                           </div>
                           <button
@@ -1716,12 +1500,8 @@ const FriendshipNetwork: React.FC = () => {
                           >
                             <FaTrash size={12} />
                           </button>
-                        </div>
-                      );
-                    })
-                ) : (
-                  <div className="text-center py-2 text-slate-400 text-sm">No connections yet</div>
-                )}
+                        </div>);
+                    })) : (<div className="text-center py-2 text-slate-400 text-sm">No connections yet</div>)}
               </div>
               <div className="mt-3 flex justify-center">
                 <Button
@@ -1729,8 +1509,7 @@ const FriendshipNetwork: React.FC = () => {
                   size="sm"
                   onClick={() => {
                     setNewRelationship({
-                      ...newRelationship,
-                      source: editPerson._id,
+                      ...newRelationship, source: editPerson._id,
                     });
                     setPersonDetailModalOpen(false);
                     setTimeout(() => setRelationshipModalOpen(true), 100);
@@ -1742,8 +1521,7 @@ const FriendshipNetwork: React.FC = () => {
               </div>
             </div>
           </div>
-        </Modal>
-      )}
+        </Modal>)}
 
       {/* Settings Modal */}
       <Modal
@@ -1765,9 +1543,7 @@ const FriendshipNetwork: React.FC = () => {
               />
               <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
               <div
-                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
-                  settings.showLabels ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'
-                }`}
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${settings.showLabels ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'}`}
               ></div>
             </div>
           </div>
@@ -1785,9 +1561,7 @@ const FriendshipNetwork: React.FC = () => {
               />
               <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
               <div
-                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
-                  settings.autoLayout ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'
-                }`}
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${settings.autoLayout ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'}`}
               ></div>
             </div>
           </div>
@@ -1801,17 +1575,11 @@ const FriendshipNetwork: React.FC = () => {
                 name="highlightConnections"
                 className="sr-only"
                 checked={settings.highlightConnections}
-                onChange={() =>
-                  setSettings({ ...settings, highlightConnections: !settings.highlightConnections })
-                }
+                onChange={() => setSettings({ ...settings, highlightConnections: !settings.highlightConnections })}
               />
               <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
               <div
-                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
-                  settings.highlightConnections
-                    ? 'transform translate-x-6 bg-indigo-500'
-                    : 'bg-gray-400'
-                }`}
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${settings.highlightConnections ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'}`}
               ></div>
             </div>
           </div>
@@ -1819,38 +1587,26 @@ const FriendshipNetwork: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Animation Speed</label>
             <div className="flex space-x-2">
-              {['slow', 'medium', 'fast'].map(speed => (
-                <button
+              {['slow', 'medium', 'fast'].map(speed => (<button
                   key={speed}
-                  className={`flex-1 py-2 px-3 rounded-md text-sm ${
-                    settings.animationSpeed === speed
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                  }`}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm ${settings.animationSpeed === speed ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
                   onClick={() => setSettings({ ...settings, animationSpeed: speed })}
                 >
                   {speed.charAt(0).toUpperCase() + speed.slice(1)}
-                </button>
-              ))}
+                </button>))}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Node Size</label>
             <div className="flex space-x-2">
-              {['small', 'medium', 'large'].map(size => (
-                <button
+              {['small', 'medium', 'large'].map(size => (<button
                   key={size}
-                  className={`flex-1 py-2 px-3 rounded-md text-sm ${
-                    settings.nodeSize === size
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                  }`}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm ${settings.nodeSize === size ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
                   onClick={() => setSettings({ ...settings, nodeSize: size })}
                 >
                   {size.charAt(0).toUpperCase() + size.slice(1)}
-                </button>
-              ))}
+                </button>))}
             </div>
           </div>
 
@@ -1964,28 +1720,21 @@ const FriendshipNetwork: React.FC = () => {
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={executeDelete}
         title="Confirm Deletion"
-        message={
-          itemToDelete.type === 'person'
-            ? 'Are you sure you want to delete this person? This will also remove all their relationships.'
-            : 'Are you sure you want to delete this relationship?'
-        }
+        message={itemToDelete.type === 'person' ? 'Are you sure you want to delete this person? This will also remove all their relationships.' : 'Are you sure you want to delete this relationship?'}
         confirmText="Delete"
         variant="danger"
       />
 
       {/* Toast Notifications */}
       <div className="fixed bottom-4 right-4 z-[9900] space-y-2 pointer-events-none">
-        {toasts.map(toast => (
-          <Toast
+        {toasts.map(toast => (<Toast
             key={toast.id}
             message={toast.message}
             type={toast.type as any}
             onClose={() => removeToast(toast.id)}
-          />
-        ))}
+          />))}
       </div>
-    </div>
-  );
+    </div>);
 };
 
 export default FriendshipNetwork;
