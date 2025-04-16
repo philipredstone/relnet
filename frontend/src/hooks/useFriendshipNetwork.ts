@@ -3,7 +3,7 @@ import { addPerson, getPeople, Person, removePerson, updatePerson } from '../api
 import {
   addRelationship,
   getRelationships,
-  Relationship,
+  Relationship, RELATIONSHIP_TYPES,
   removeRelationship,
   updateRelationship,
 } from '../api/relationships';
@@ -314,7 +314,7 @@ export const useFriendshipNetwork = (
   const createRelationship = async (relationshipData: {
     source: string;
     target: string;
-    type: 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+    type: RELATIONSHIP_TYPES;
     customType?: string;
   }): Promise<RelationshipEdge> => {
     if (!networkId) throw new Error('No network selected');

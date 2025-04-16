@@ -37,9 +37,7 @@ import {
 
 // Import visible canvas graph component
 import CanvasGraph from './CanvasGraph';
-
-// Define types
-type RelationshipType = 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+import { RELATIONSHIP_LABELS, RELATIONSHIP_TYPES } from '../api/relationships';
 
 interface PersonNode {
   _id: string;
@@ -65,9 +63,7 @@ const RELATIONSHIP_COLORS = {
   custom: '#9CA3AF', // Gray
 };
 
-const RELATIONSHIP_LABELS = {
-  freund: 'Friend', partner: 'Partner', familie: 'Family', arbeitskolleg: 'Colleague', custom: 'Custom',
-};
+
 
 // Main FriendshipNetwork component
 const FriendshipNetwork: React.FC = () => {
@@ -130,7 +126,7 @@ const FriendshipNetwork: React.FC = () => {
   const [editPerson, setEditPerson] = useState<PersonNode | null>(null);
 
   const [newRelationship, setNewRelationship] = useState({
-    source: '', target: '', type: 'freund' as RelationshipType, customType: '', notes: '', bidirectional: true,
+    source: '', target: '', type: 'freund' as RELATIONSHIP_TYPES, customType: '', notes: '', bidirectional: true,
   });
 
   // Filter states
@@ -776,7 +772,7 @@ const FriendshipNetwork: React.FC = () => {
                             style={{ backgroundColor: color }}
                           ></div>
                           <span className="capitalize">
-                            {RELATIONSHIP_LABELS[type as RelationshipType]}
+                            {RELATIONSHIP_LABELS[type as RELATIONSHIP_TYPES]}
                           </span>
                         </div>))}
                     </div>
@@ -913,14 +909,14 @@ const FriendshipNetwork: React.FC = () => {
                   {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (<button
                       key={type}
                       className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex items-center ${relationshipTypeFilter === type ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                      onClick={() => setRelationshipTypeFilter(type as RelationshipType)}
+                      onClick={() => setRelationshipTypeFilter(type as RELATIONSHIP_TYPES)}
                     >
                       <span
                         className="w-2 h-2 rounded-full mr-1"
                         style={{ backgroundColor: color }}
                       ></span>
                       <span className="capitalize">
-                        {RELATIONSHIP_LABELS[type as RelationshipType]}
+                        {RELATIONSHIP_LABELS[type as RELATIONSHIP_TYPES]}
                       </span>
                     </button>))}
                 </div>
@@ -1268,7 +1264,7 @@ const FriendshipNetwork: React.FC = () => {
               focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
               value={newRelationship.type}
               onChange={e => setNewRelationship({
-                ...newRelationship, type: e.target.value as RelationshipType,
+                ...newRelationship, type: e.target.value as RELATIONSHIP_TYPES,
               })}
             >
               {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (<option key={value} value={value}>

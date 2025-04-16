@@ -6,12 +6,18 @@ const port = window.location.port;
 
 const API_URL = protocol + '//' + hostname + (port ? ':' + port : '') + '/api';
 
+export type RELATIONSHIP_TYPES = 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+
+export const RELATIONSHIP_LABELS = {
+  freund: 'Friend', partner: 'Partner', familie: 'Family', arbeitskolleg: 'Colleague', custom: 'Custom',
+};
+
 // Types
 export interface Relationship {
   _id: string;
   source: string;
   target: string;
-  type: 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+  type: RELATIONSHIP_TYPES;
   customType?: string;
   network: string;
   createdAt: string;
@@ -21,12 +27,12 @@ export interface Relationship {
 export interface CreateRelationshipData {
   source: string;
   target: string;
-  type: 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+  type: RELATIONSHIP_TYPES;
   customType?: string;
 }
 
 export interface UpdateRelationshipData {
-  type?: 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+  type?: RELATIONSHIP_TYPES;
   customType?: string;
 }
 
