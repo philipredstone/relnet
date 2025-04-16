@@ -51,15 +51,6 @@ interface PersonNode {
     x: number; y: number;
   };
 }
-
-interface RelationshipEdge {
-  _id: string;
-  source: string;
-  target: string;
-  type: RelationshipType;
-  customType?: string;
-  notes?: string;
-}
 // Type for form errors
 interface FormErrors {
   [key: string]: string;
@@ -1150,6 +1141,7 @@ const FriendshipNetwork: React.FC = () => {
               className={`w-full bg-slate-700 border ${personFormErrors.firstName ? 'border-red-500' : 'border-slate-600'} 
               rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
               placeholder="Enter first name"
+              autoFocus={true}
               value={newPerson.firstName}
               onChange={e => setNewPerson({ ...newPerson, firstName: e.target.value })}
             />
@@ -1236,6 +1228,7 @@ const FriendshipNetwork: React.FC = () => {
           >
             <select
               id="source"
+              autoFocus={true}
               className={`w-full bg-slate-700 border ${relationshipFormErrors.source ? 'border-red-500' : 'border-slate-600'} 
               rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
               value={newRelationship.source}
