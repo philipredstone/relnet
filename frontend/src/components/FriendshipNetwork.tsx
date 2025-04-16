@@ -376,7 +376,7 @@ const FriendshipNetwork: React.FC = () => {
     // Create edges
     const graphEdges = relationships.map(rel => {
       const color = RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.color || RELATIONSHIPS.custom.color;
-      const width = rel.type === 'partner' ? 4 : rel.type === 'familie' ? 3 : 2;
+      const width = rel.type === 'partner' ? 4 : rel.type === 'family' ? 3 : rel.type === 'acquaintance' ? 2 : 1;
 
       // Highlight edges connected to selected node
       const isHighlighted = selectedPersonId && settings.highlightConnections && (rel.source === selectedPersonId || rel.target === selectedPersonId);
