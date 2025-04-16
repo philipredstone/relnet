@@ -36,6 +36,15 @@ RUN bun run build
 
 # Final production stage
 FROM oven/bun:1-slim
+LABEL "org.opencontainers.image.title"="Relnet"
+LABEL "org.opencontainers.image.source"="https://github.com/philipredstone/relnet"
+LABEL "org.opencontainers.image.url"="https://github.com/philipredstone/relnet"
+LABEL "org.opencontainers.image.description"="A dynamic web application for visualizing and managing a friendship network. This project uses graphs to display interactive connection graphs between friends, and includes a backend server built with Node.js, TypeScript, Express, and Mongoose for data persistence."
+LABEL "org.opencontainers.image.version"="1.0.0"
+LABEL "VERSION"="1.0.0"
+LABEL maintainer="Tobias Hopp and Philip Rothstein"
+
+
 WORKDIR /app
 
 # Copy built artifacts from previous stages
@@ -57,7 +66,7 @@ EXPOSE 80
 
 # Health check to verify the application is running
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:$PORT/api/health || exit 1
+  CMD /bin/sh -c 'curl -f http://localhost:$PORT/api/health || exit 1'
 
 # Start the application
 CMD ["bun", "dist/server.js"]
