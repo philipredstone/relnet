@@ -52,7 +52,7 @@ app.use('/api/networks', peopleRoutes);
 app.use('/api/networks', relationshipRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.send('OK');
 });
 

@@ -57,7 +57,7 @@ EXPOSE 80
 
 # Health check to verify the application is running
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:$PORT/health || exit 1
+  CMD curl -f http://localhost:$PORT/api/health || exit 1
 
 # Start the application
 CMD ["bun", "run", "start"]
