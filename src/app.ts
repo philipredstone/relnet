@@ -51,6 +51,11 @@ app.use('/api/networks', networkRoutes);
 app.use('/api/networks', peopleRoutes);
 app.use('/api/networks', relationshipRoutes);
 
+// Health check
+app.get('/api/health', (req, res) => {
+  res.send('OK');
+});
+
 app.use(express.static(path.join(__dirname, '../frontend/dist/')));
 
 app.use((req, res, next) => {
