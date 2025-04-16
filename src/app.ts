@@ -7,12 +7,14 @@ import networkRoutes from './routes/network.routes';
 import peopleRoutes from './routes/people.routes';
 import relationshipRoutes from './routes/relationship.routes';
 import path from 'node:path';
+import helmet from "helmet";
 
 dotenv.config();
 
 const app: Application = express();
 
 // Middleware
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -28,10 +30,6 @@ app.use('/api/networks', networkRoutes);
 app.use('/api/networks', peopleRoutes);
 app.use('/api/networks', relationshipRoutes);
 
-// Base route
-/*app.get('/', (req, res) => {
-    res.send('Friendship Network API is running');
-});*/
 
 app.use(express.static(path.join(__dirname, '../frontend/dist/')));
 
