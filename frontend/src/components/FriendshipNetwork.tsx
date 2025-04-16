@@ -360,7 +360,7 @@ const FriendshipNetwork: React.FC = () => {
   });
 
   // Add toast notification
-  const addToast = (message: string, type = 'success') => {
+  const addToast = (message: string, type: 'error' | 'success' | 'warning' | 'info' = 'success') => {
     const id = Date.now();
     setToasts(prevToasts => [...prevToasts, { id, message, type, onClose: () => removeToast(id) }]);
 
