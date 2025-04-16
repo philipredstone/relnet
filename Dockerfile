@@ -44,6 +44,12 @@ LABEL "org.opencontainers.image.version"="1.0.0"
 LABEL "VERSION"="1.0.0"
 LABEL maintainer="Tobias Hopp and Philip Rothstein"
 
+# Install curl for healthcheck
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get -qq -y install curl && \
+    rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+
 
 WORKDIR /app
 
