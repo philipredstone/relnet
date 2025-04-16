@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { GraphData } from 'react-force-graph-2d';
 
 // Define types for graph elements
 interface NodeData {
@@ -19,15 +20,18 @@ interface EdgeData {
   width: number;
 }
 
-interface GraphData {
+interface CustomGraphData extends GraphData {
   nodes: NodeData[];
   edges: EdgeData[];
 }
 
 interface CanvasGraphProps {
-  data: GraphData;
-  width: number;
-  height: number;
+  data: CustomGraphData,
+  width: number,
+  height: number,
+  zoomLevel: number,
+  onNodeClick: (nodeId: string) => void,
+  onNodeDrag: (nodeId, x, y) => void
 }
 
 // Physics constants
@@ -42,7 +46,7 @@ const CENTER_GRAVITY = 0.01; // Force pulling nodes to the center
 const MAX_VELOCITY = 5; // Maximum velocity to prevent wild movement
 const COOLING_FACTOR = 0.99; // System gradually cools down
 
-const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
+const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height, zoomLevel, onNodeClick, onNodeDrag }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // State for interactions
@@ -81,7 +85,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
     // Skip if we already have positions for all nodes
     const allNodesHavePositions = data.nodes.every(
       node =>
-        nodePositions[node.id] && (nodePositions[node.id].x !== 0 || nodePositions[node.id].y !== 0)
+        nodePositions[node.id] && (nodePositions[node.id].x !== 0 || nodePositions[node.id].y !== 0),
     );
 
     if (allNodesHavePositions) {
@@ -254,7 +258,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
           // Limit maximum velocity to prevent wild movement
           const speed = Math.sqrt(
             newPositions[node.id].vx * newPositions[node.id].vx +
-              newPositions[node.id].vy * newPositions[node.id].vy
+            newPositions[node.id].vy * newPositions[node.id].vy,
           );
           if (speed > MAX_VELOCITY) {
             newPositions[node.id].vx = (newPositions[node.id].vx / speed) * MAX_VELOCITY;
@@ -332,7 +336,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
 
       return null;
     },
-    [data.nodes, nodePositions, panOffset, scale]
+    [data.nodes, nodePositions, panOffset, scale],
   ); // FIX: Added proper dependencies
 
   // Mouse event handlers
@@ -372,7 +376,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
         setPanStart({ x, y });
       }
     },
-    [findNodeAtPosition, nodePositions, panOffset, scale]
+    [findNodeAtPosition, nodePositions, panOffset, scale],
   ); // FIX: Added proper dependencies
 
   const handleMouseMove = useCallback(
@@ -418,7 +422,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
         setPanStart({ x, y });
       }
     },
-    [findNodeAtPosition, draggedNode, isPanning, offsetX, offsetY, panOffset, panStart, scale]
+    [findNodeAtPosition, draggedNode, isPanning, offsetX, offsetY, panOffset, panStart, scale],
   ); // FIX: Added proper dependencies
 
   const handleMouseUp = useCallback(() => {
@@ -451,7 +455,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
       setScale(newScale);
       setPanOffset({ x: newPanOffsetX, y: newPanOffsetY });
     },
-    [scale, panOffset]
+    [scale, panOffset],
   );
 
   const toggleAutoLayout = useCallback(() => {
@@ -471,7 +475,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
       ctx.textBaseline = 'middle';
       ctx.fillText(autoLayout ? 'Physics: ON' : 'Physics: OFF', width - 70, 40);
     },
-    [autoLayout, width]
+    [autoLayout, width],
   );
 
   // Draw function - FIX: Properly memoized with all dependencies
@@ -592,7 +596,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
           pos.x - textWidth / 2 - padding,
           pos.y + NODE_RADIUS + 5,
           textWidth + padding * 2,
-          textHeight + padding * 2
+          textHeight + padding * 2,
         );
 
         ctx.fillStyle = 'white';
@@ -628,7 +632,7 @@ const CanvasGraph: React.FC<CanvasGraphProps> = ({ data, width, height }) => {
         toggleAutoLayout();
       }
     },
-    [width, toggleAutoLayout]
+    [width, toggleAutoLayout],
   ); // FIX: Added proper dependencies
 
   // FIX: Ensure continuous rendering with requestAnimationFrame
