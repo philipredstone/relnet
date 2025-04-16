@@ -1,47 +1,63 @@
 # syntax=docker/dockerfile:1
-FROM node:22 AS frontend-builder
 
-# Workingdir
+# Frontend builder stage
+FROM oven/bun:1 AS frontend-builder
 WORKDIR /frontend
 
-# Copy files
+# Install dependencies
+COPY frontend/package.json frontend/bun.lockb* ./
+RUN bun install --frozen-lockfile
+
+# Copy source files
 COPY frontend/src/ src/
-COPY frontend/package.json .
 COPY frontend/index.html .
 COPY frontend/tsconfig.json .
 COPY frontend/vite.config.mjs .
 
-# Install libs
-RUN yarn install
-# Build to dist/
-RUN yarn build
+# Build the frontend
+RUN bun run build
 
-
-FROM node:22 AS backend-builder
-
-# Workingdir
+# Backend builder stage
+FROM oven/bun:1 AS backend-builder
 WORKDIR /app
 
-COPY package.json .
-RUN yarn install
+# Copy package files first for better caching
+COPY package.json bun.lockb* ./
 
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy source files
 COPY tsconfig.json .
 COPY src/ src/
 
-# Build to dist/
-RUN yarn run build
+# Build the backend
+RUN bun run build
 
+# Final production stage
+FROM oven/bun:1-slim
+WORKDIR /app
 
-# Final stage
-FROM node:22-slim
-COPY --from=frontend-builder /frontend/dist/ frontend/dist
-COPY --from=backend-builder /app/dist/ dist/
-COPY --from=backend-builder /app/node_modules node_modules
-COPY package.json .
+# Copy built artifacts from previous stages
+COPY --from=frontend-builder /frontend/dist/ ./frontend/dist
+COPY --from=backend-builder /app/dist/ ./dist/
 
+# Only copy production dependencies
+COPY package.json ./
+RUN bun install --production --frozen-lockfile
+
+# Set environment variables
 ENV PORT=80
 ENV MONGODB_URI=mongodb://db:27017/friendship-network
 ENV APP_URL=http://localhost:80
 ENV ENABLE_REGISTRATION=true
 
-CMD ["yarn", "run", "start"]
+# Expose the port
+EXPOSE 80
+
+# Health check to verify the application is running
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:$PORT/health || exit 1
+
+# Start the application
+CMD ["bun", "run", "start"]
