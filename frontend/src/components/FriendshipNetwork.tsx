@@ -1,52 +1,48 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useFriendshipNetwork } from '../hooks/useFriendshipNetwork';
 import { useNetworks } from '../context/NetworkContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Transition } from '@headlessui/react';
 import {
-  FaUserPlus,
-  FaUserFriends,
-  FaTrash,
-  FaEdit,
-  FaRedo,
-  FaCompress,
-  FaSearchPlus,
-  FaSearchMinus,
-  FaTimes,
+  FaArrowLeft,
   FaChevronLeft,
   FaChevronRight,
-  FaRegCalendarAlt,
-  FaInfo,
-  FaFilter,
-  FaPalette,
-  FaSave,
-  FaUserCircle,
-  FaSearch,
   FaCog,
-  FaHome,
-  FaArrowLeft,
-  FaNetworkWired,
-  FaPlus,
-  FaStar,
+  FaCompress,
+  FaEdit,
   FaExclamationTriangle,
+  FaHome,
+  FaInfo,
+  FaPlus,
+  FaRedo,
+  FaRegCalendarAlt,
+  FaSave,
+  FaSearch,
+  FaSearchMinus,
+  FaSearchPlus,
+  FaStar,
+  FaTimes,
+  FaTrash,
+  FaUserCircle,
+  FaUserFriends,
+  FaUserPlus,
 } from 'react-icons/fa';
 
 // Import custom UI components
 import {
-  Tooltip,
-  Modal,
-  ConfirmDialog,
-  NetworkStats,
-  Toast,
   Button,
-  FormField,
-  Badge,
-  EmptyState,
   Card,
   CardBody,
+  ConfirmDialog,
+  EmptyState,
+  FormField,
+  Modal,
+  NetworkStats,
+  Toast,
   ToastItem,
+  Tooltip,
 } from './FriendshipNetworkComponents';
 
 // Import visible canvas graph component
@@ -1212,7 +1208,7 @@ const FriendshipNetwork: React.FC = () => {
             zoomLevel={zoomLevel}
             onNodeClick={handleNodeClick}
             onNodeDrag={(nodeId, x, y) => {
-              updatePersonPosition(nodeId, { x, y });
+              updatePersonPosition(nodeId, { x, y }).then();
             }}
           />
         )}
