@@ -6,8 +6,8 @@ import {
   removeRelationship,
   updateRelationship,
 } from '../api/relationships';
-import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
 import { Relationship } from '../interfaces/IRelationship';
+import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
 
 interface PersonNode extends Person {
   // Additional properties needed for the visualization
@@ -343,7 +343,7 @@ export const useFriendshipNetwork = (
   const updateRelationshipData = async (
     relationshipId: string,
     relationshipData: {
-      type?: 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+      type?: RELATIONSHIP_TYPES;
       customType?: string;
     },
   ): Promise<RelationshipEdge> => {

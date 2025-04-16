@@ -1,5 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+
+export const RELATIONSHIP_TYPES = [
+  'acquaintance', 'friend', 'partner', 'family', 'secondDegree', 'colleague', 'teacher', 'exPartner', 'custom',
+];
+
 export interface IRelationship extends Document {
   _id: string;
   source: mongoose.Types.ObjectId;
@@ -24,7 +29,7 @@ const RelationshipSchema = new Schema(
     type: {
       type: String,
       required: [true, 'Relationship type is required'],
-      enum: ['freund', 'partner', 'familie', 'arbeitskolleg', 'custom'],
+      enum: RELATIONSHIP_TYPES,
     },
     customType: {
       type: String,
@@ -36,7 +41,7 @@ const RelationshipSchema = new Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Create compound index to ensure unique relationships in a network

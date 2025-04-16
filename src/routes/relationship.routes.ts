@@ -3,6 +3,8 @@ import { check } from 'express-validator';
 import * as relationshipController from '../controllers/relationship.controller';
 import { auth } from '../middleware/auth.middleware';
 import { checkNetworkAccess } from '../middleware/network-access.middleware';
+import { RELATIONSHIP_TYPES } from '../models/relationship.model';
+
 
 const router = express.Router();
 
@@ -22,13 +24,7 @@ router.post(
   [
     check('source', 'Source person ID is required').not().isEmpty().isMongoId(),
     check('target', 'Target person ID is required').not().isEmpty().isMongoId(),
-    check('type', 'Relationship type is required').isIn([
-      'freund',
-      'partner',
-      'familie',
-      'arbeitskolleg',
-      'custom',
-    ]),
+    check('type', 'Relationship type is required').isIn(RELATIONSHIP_TYPES),
     check('customType', 'Custom type is required when type is custom')
       .if(check('type').equals('custom'))
       .not()
@@ -45,7 +41,7 @@ router.put(
   [
     check('type', 'Relationship type must be valid if provided')
       .optional()
-      .isIn(['freund', 'partner', 'familie', 'arbeitskolleg', 'custom']),
+      .isIn(RELATIONSHIP_TYPES),
     check('customType', 'Custom type is required when type is custom')
       .if(check('type').equals('custom'))
       .not()

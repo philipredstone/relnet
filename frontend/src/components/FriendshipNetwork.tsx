@@ -47,7 +47,7 @@ import {
 
 // Import visible canvas graph component
 import CanvasGraph from './CanvasGraph';
-import { RELATIONSHIP_COLORS, RELATIONSHIP_LABELS, RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
+import { getRelationshipColor, RELATIONSHIP_TYPES, RELATIONSHIPS } from '../types/RelationShipTypes';
 import { FormErrors, PersonNode } from '../interfaces/IPersonNode';
 
 
@@ -112,7 +112,7 @@ const FriendshipNetwork: React.FC = () => {
   const [editPerson, setEditPerson] = useState<PersonNode | null>(null);
 
   const [newRelationship, setNewRelationship] = useState({
-    source: '', target: '', type: 'freund' as RELATIONSHIP_TYPES, customType: '', notes: '', bidirectional: true,
+    source: '', target: '', type: 'friend' as RELATIONSHIP_TYPES, customType: '', notes: '', bidirectional: true,
   });
 
   // Filter states
@@ -375,7 +375,7 @@ const FriendshipNetwork: React.FC = () => {
 
     // Create edges
     const graphEdges = relationships.map(rel => {
-      const color = RELATIONSHIP_COLORS[rel.type] || RELATIONSHIP_COLORS.custom;
+      const color = RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.color || RELATIONSHIPS.custom.color;
       const width = rel.type === 'partner' ? 4 : rel.type === 'familie' ? 3 : 2;
 
       // Highlight edges connected to selected node
@@ -515,7 +515,7 @@ const FriendshipNetwork: React.FC = () => {
 
     // Reset form and close modal
     setNewRelationship({
-      source: '', target: '', type: 'freund', customType: '', notes: '', bidirectional: true,
+      source: '', target: '', type: 'friend', customType: '', notes: '', bidirectional: true,
     });
 
     setRelationshipModalOpen(false);
@@ -751,14 +751,14 @@ const FriendshipNetwork: React.FC = () => {
                   <CardBody>
                     <h3 className="font-medium mb-2 text-indigo-400">Legend</h3>
                     <div className="space-y-2">
-                      {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (
+                      {Object.entries(RELATIONSHIPS).map(([type, { label, color }]) => (
                         <div key={type} className="flex items-center text-sm">
                           <div
                             className="w-4 h-4 rounded-full mr-2"
                             style={{ backgroundColor: color }}
                           ></div>
                           <span className="capitalize">
-                            {RELATIONSHIP_LABELS[type as RELATIONSHIP_TYPES]}
+                            {RELATIONSHIPS[type]?.label}
                           </span>
                         </div>))}
                     </div>
@@ -892,7 +892,7 @@ const FriendshipNetwork: React.FC = () => {
                   >
                     All Types
                   </button>
-                  {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (<button
+                  {Object.entries(RELATIONSHIPS).map(([type, { label, color }]) => (<button
                       key={type}
                       className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex items-center ${relationshipTypeFilter === type ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
                       onClick={() => setRelationshipTypeFilter(type as RELATIONSHIP_TYPES)}
@@ -902,7 +902,7 @@ const FriendshipNetwork: React.FC = () => {
                         style={{ backgroundColor: color }}
                       ></span>
                       <span className="capitalize">
-                        {RELATIONSHIP_LABELS[type as RELATIONSHIP_TYPES]}
+                        {RELATIONSHIPS[type as RELATIONSHIP_TYPES]?.label}
                       </span>
                     </button>))}
                 </div>
@@ -947,10 +947,10 @@ const FriendshipNetwork: React.FC = () => {
                               <div className="flex items-center text-xs text-slate-400 mt-1">
                                 <span
                                   className="inline-block w-2 h-2 rounded-full mr-1"
-                                  style={{ backgroundColor: RELATIONSHIP_COLORS[rel.type] }}
+                                  style={{ backgroundColor: RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.color }}
                                 ></span>
                                 <span className="capitalize">
-                                  {rel.type === 'custom' ? rel.customType : RELATIONSHIP_LABELS[rel.type]}
+                                 {rel.type === 'custom' ? rel.customType : RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.label}
                                 </span>
                               </div>
                             </div>
@@ -1253,7 +1253,7 @@ const FriendshipNetwork: React.FC = () => {
                 ...newRelationship, type: e.target.value as RELATIONSHIP_TYPES,
               })}
             >
-              {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (<option key={value} value={value}>
+              {Object.entries(RELATIONSHIPS).map(([value, { label }]) => (<option key={value} value={value}>
                   {label}
                 </option>))}
             </select>
@@ -1449,7 +1449,7 @@ const FriendshipNetwork: React.FC = () => {
                           <div className="flex items-center">
                             <span
                               className="inline-block w-2 h-2 rounded-full mr-2"
-                              style={{ backgroundColor: RELATIONSHIP_COLORS[rel.type] }}
+                              style={{ backgroundColor: RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.color }}
                             ></span>
                             <span className="text-sm">
                               {isSource ? 'To: ' : 'From: '}
@@ -1466,7 +1466,9 @@ const FriendshipNetwork: React.FC = () => {
                               >
                                 {otherPerson.firstName} {otherPerson.lastName}
                               </span>
-                              {rel.type === 'custom' ? ` (${rel.customType})` : ` (${RELATIONSHIP_LABELS[rel.type]})`}
+                              {rel.type === 'custom'
+                                ? ` (${rel.customType})`
+                                : ` (${RELATIONSHIPS[rel.type as RELATIONSHIP_TYPES]?.label})`}
                             </span>
                           </div>
                           <button

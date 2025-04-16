@@ -217,12 +217,12 @@ const createSampleDemoNetwork = async (userId: mongoose.Types.ObjectId | string)
 
     // Create relationships between people
     const relationships = [
-      { source: 'JohnSmith', target: 'EmmaJohnson', type: 'freund' },
-      { source: 'EmmaJohnson', target: 'MichaelWilliams', type: 'familie' },
-      { source: 'MichaelWilliams', target: 'SarahBrown', type: 'arbeitskolleg' },
-      { source: 'SarahBrown', target: 'DavidJones', type: 'freund' },
+      { source: 'JohnSmith', target: 'EmmaJohnson', type: 'friend' },
+      { source: 'EmmaJohnson', target: 'MichaelWilliams', type: 'family' },
+      { source: 'MichaelWilliams', target: 'SarahBrown', type: 'colleague' },
+      { source: 'SarahBrown', target: 'DavidJones', type: 'friend' },
       { source: 'DavidJones', target: 'LisaGarcia', type: 'partner' },
-      { source: 'JohnSmith', target: 'DavidJones', type: 'arbeitskolleg' },
+      { source: 'JohnSmith', target: 'DavidJones', type: 'colleague' },
     ];
 
     // Create each relationship
