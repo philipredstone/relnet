@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/user.model';
+import Network from '../models/network.model';
+import Person from '../models/person.model';
+import Relationship from '../models/relationship.model';
 import { UserRequest } from '../types/express';
 import { validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 
 // JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
@@ -61,6 +65,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     // Save user to database
     await user.save();
+
+    // Create a sample demo network
+    // Fix: Ensure user._id is treated as ObjectId
+    await createSampleDemoNetwork(user._id);
 
     // Generate JWT token
     const token = generateToken(user);
@@ -161,5 +169,75 @@ export const getCurrentUser = async (req: UserRequest, res: Response): Promise<v
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Create a sample demo network for new users
+// Fix: Update parameter type to accept both string and ObjectId
+const createSampleDemoNetwork = async (userId: mongoose.Types.ObjectId | string): Promise<void> => {
+  try {
+    // Ensure userId is an ObjectId
+    const userObjectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+
+    // Create a demo network
+    const network = new Network({
+      name: 'My Sample Network',
+      description: 'A demo network to help you get started',
+      owner: userObjectId,
+      isPublic: false,
+    });
+
+    await network.save();
+
+    // Create sample people with better spacing
+    const people = [
+      { firstName: 'John', lastName: 'Smith', position: { x: 200, y: 200 } },
+      { firstName: 'Emma', lastName: 'Johnson', position: { x: 600, y: 200 } },
+      { firstName: 'Michael', lastName: 'Williams', position: { x: 200, y: 600 } },
+      { firstName: 'Sarah', lastName: 'Brown', position: { x: 600, y: 600 } },
+      { firstName: 'David', lastName: 'Jones', position: { x: 800, y: 400 } },
+      { firstName: 'Lisa', lastName: 'Garcia', position: { x: 400, y: 400 } },
+    ];
+
+    // Fix: Update the type to accept string or ObjectId
+    const savedPeople: { [key: string]: mongoose.Types.ObjectId | string } = {};
+
+    // Create each person
+    for (const person of people) {
+      const newPerson = new Person({
+        firstName: person.firstName,
+        lastName: person.lastName,
+        network: network._id,
+        position: person.position,
+      });
+
+      await newPerson.save();
+      savedPeople[`${person.firstName}${person.lastName}`] = newPerson._id;
+    }
+
+    // Create relationships between people
+    const relationships = [
+      { source: 'JohnSmith', target: 'EmmaJohnson', type: 'freund' },
+      { source: 'EmmaJohnson', target: 'MichaelWilliams', type: 'familie' },
+      { source: 'MichaelWilliams', target: 'SarahBrown', type: 'arbeitskolleg' },
+      { source: 'SarahBrown', target: 'DavidJones', type: 'freund' },
+      { source: 'DavidJones', target: 'LisaGarcia', type: 'partner' },
+      { source: 'JohnSmith', target: 'DavidJones', type: 'arbeitskolleg' },
+    ];
+
+    // Create each relationship
+    for (const rel of relationships) {
+      const newRelationship = new Relationship({
+        source: savedPeople[rel.source],
+        target: savedPeople[rel.target],
+        type: rel.type,
+        network: network._id,
+      });
+
+      await newRelationship.save();
+    }
+  } catch (error) {
+    console.error('Error creating sample network:', error);
+    // Don't throw the error, just log it so that registration can continue
   }
 };

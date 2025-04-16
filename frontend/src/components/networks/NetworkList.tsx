@@ -143,7 +143,10 @@ const NetworkList: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2" htmlFor="description">
+                  <label
+                    className="block text-slate-300 text-sm font-medium mb-2"
+                    htmlFor="description"
+                  >
                     Description (Optional)
                   </label>
                   <textarea
@@ -166,7 +169,9 @@ const NetworkList: React.FC = () => {
                       checked={isPublic}
                       onChange={e => setIsPublic(e.target.checked)}
                     />
-                    <span className="ml-2 text-slate-300 text-sm font-medium">Make this network public</span>
+                    <span className="ml-2 text-slate-300 text-sm font-medium">
+                      Make this network public
+                    </span>
                   </label>
                 </div>
 
@@ -224,7 +229,7 @@ const NetworkList: React.FC = () => {
               <h2 className="text-xl font-semibold mb-4 text-indigo-300 flex items-center">
                 <FaNetworkWired className="mr-2" /> My Networks ({myNetworks.length})
               </h2>
-              
+
               {myNetworks.length === 0 ? (
                 <p className="text-slate-400 bg-slate-800 p-4 rounded-lg border border-slate-700">
                   You haven't created any networks yet.
@@ -248,15 +253,15 @@ const NetworkList: React.FC = () => {
                             <FaLock className="text-amber-400" title="Private" />
                           )}
                         </div>
-                        
+
                         {network.description && (
                           <p className="text-slate-300 mb-4 text-sm">{network.description}</p>
                         )}
-                        
+
                         <div className="text-xs text-slate-400 mb-6">
                           Created: {new Date(network.createdAt).toLocaleDateString()}
                         </div>
-                        
+
                         <div className="flex space-x-3">
                           <motion.button
                             whileHover={{ scale: 1.05 }}
@@ -267,7 +272,7 @@ const NetworkList: React.FC = () => {
                           >
                             <FaEye className="mr-2" /> View
                           </motion.button>
-                          
+
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -291,7 +296,7 @@ const NetworkList: React.FC = () => {
                 <h2 className="text-xl font-semibold mb-4 text-indigo-300 flex items-center">
                   <FaGlobe className="mr-2" /> Public Networks ({publicNetworks.length})
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {publicNetworks.map(network => (
                     <motion.div
@@ -306,20 +311,21 @@ const NetworkList: React.FC = () => {
                           <h3 className="text-xl font-bold text-white">{network.name}</h3>
                           <FaGlobe className="text-green-400" title="Public" />
                         </div>
-                        
+
                         {network.description && (
                           <p className="text-slate-300 mb-4 text-sm">{network.description}</p>
                         )}
-                        
+
                         <div className="flex justify-between mb-6">
                           <span className="text-xs text-slate-400">
                             Created: {new Date(network.createdAt).toLocaleDateString()}
                           </span>
                           <span className="text-xs font-medium text-green-400">
-                            By: {typeof network.owner === 'string' ? 'Unknown' : network.owner.username}
+                            By:{' '}
+                            {typeof network.owner === 'string' ? 'Unknown' : network.owner.username}
                           </span>
                         </div>
-                        
+
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}

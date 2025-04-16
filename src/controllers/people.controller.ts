@@ -66,7 +66,7 @@ export const addPerson = async (req: UserRequest, res: Response): Promise<void> 
       lastName,
       birthday: birthday || undefined,
       network: networkId,
-      position: position || { x: 100 + Math.random() * 500, y: 100 + Math.random() * 400 },
+      position: position || { x: 100 + Math.random() * 800, y: 100 + Math.random() * 600 },
     });
 
     await person.save();

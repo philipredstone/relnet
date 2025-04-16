@@ -33,14 +33,14 @@ const Header: React.FC = () => {
               <FaNetworkWired className="h-6 w-6 text-indigo-400" />
               <span className="ml-2 text-white font-bold text-xl">RelNet</span>
             </Link>
-            
+
             {user && (
               <nav className="ml-8 flex space-x-4">
-                <Link 
-                  to="/networks" 
+                <Link
+                  to="/networks"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname.includes('/networks') 
-                      ? 'bg-slate-700 text-white' 
+                    location.pathname.includes('/networks')
+                      ? 'bg-slate-700 text-white'
                       : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                   } transition-colors duration-200 flex items-center`}
                 >
@@ -49,7 +49,7 @@ const Header: React.FC = () => {
               </nav>
             )}
           </div>
-          
+
           <div className="flex items-center">
             {user ? (
               <div className="flex items-center space-x-4">
@@ -62,7 +62,7 @@ const Header: React.FC = () => {
                       <FaUser />
                     </div>
                   </button>
-                  
+
                   <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-md shadow-lg py-1 z-10 border border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <button
                       onClick={handleLogout}

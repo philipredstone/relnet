@@ -1,20 +1,141 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFriendshipNetwork } from '../hooks/useFriendshipNetwork';
 import { useNetworks } from '../context/NetworkContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import ForceGraph2D from 'react-force-graph-2d';
-import { 
-  FaUserPlus, FaUserFriends, FaTrash, FaTimes, FaCog, 
-  FaSearch, FaSearchPlus, FaSearchMinus, FaRedo, FaCompress
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { Transition } from '@headlessui/react';
+import {
+  FaUserPlus,
+  FaUserFriends,
+  FaTrash,
+  FaEdit,
+  FaRedo,
+  FaCompress,
+  FaSearchPlus,
+  FaSearchMinus,
+  FaTimes,
+  FaChevronLeft,
+  FaChevronRight,
+  FaRegCalendarAlt,
+  FaInfo,
+  FaFilter,
+  FaPalette,
+  FaSave,
+  FaUserCircle,
+  FaSearch,
+  FaCog,
+  FaHome,
+  FaArrowLeft,
+  FaNetworkWired,
+  FaPlus,
+  FaStar,
+  FaExclamationTriangle,
 } from 'react-icons/fa';
 
+// Import custom UI components
+import {
+  Tooltip,
+  Modal,
+  ConfirmDialog,
+  NetworkStats,
+  Toast,
+  Button,
+  FormField,
+  Badge,
+  EmptyState,
+  Card,
+  CardBody,
+  ToastItem,
+} from './FriendshipNetworkComponents';
+
+// Import visible canvas graph component
+import CanvasGraph from './CanvasGraph';
+
+// Define types
+type RelationshipType = 'freund' | 'partner' | 'familie' | 'arbeitskolleg' | 'custom';
+
+interface PersonNode {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  birthday?: Date | string | null;
+  notes?: string;
+  position?: {
+    x: number;
+    y: number;
+  };
+}
+
+interface RelationshipEdge {
+  _id: string;
+  source: string;
+  target: string;
+  type: RelationshipType;
+  customType?: string;
+  notes?: string;
+}
+
+interface CanvasGraphProps {
+  data: {
+    nodes: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      connectionCount: number;
+      bgColor: string;
+      x: number;
+      y: number;
+      showLabel: boolean;
+    }[];
+    edges: {
+      id: string;
+      source: string;
+      target: string;
+      color: string;
+      width: number;
+      type: RelationshipType;
+      customType?: string;
+    }[];
+  };
+  width: number;
+  height: number;
+  zoomLevel: number;
+  onNodeClick: (nodeId: string) => void;
+  onNodeDrag: (nodeId: string, x: number, y: number) => void;
+}
+
+// Type for form errors
+interface FormErrors {
+  [key: string]: string;
+}
+
+// Graph appearance constants
+const RELATIONSHIP_COLORS = {
+  freund: '#60A5FA', // Light blue
+  partner: '#F472B6', // Pink
+  familie: '#34D399', // Green
+  arbeitskolleg: '#FBBF24', // Yellow
+  custom: '#9CA3AF', // Gray
+};
+
+const RELATIONSHIP_LABELS = {
+  freund: 'Friend',
+  partner: 'Partner',
+  familie: 'Family',
+  arbeitskolleg: 'Colleague',
+  custom: 'Custom',
+};
+
+// Main FriendshipNetwork component
 const FriendshipNetwork: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { networks } = useNetworks();
   const navigate = useNavigate();
-  const graphRef = useRef<any>(null);
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  const [graphDimensions, setGraphDimensions] = useState({ width: 0, height: 0 });
 
+  // Network data state from custom hook
   const {
     people,
     relationships,
@@ -24,926 +145,1848 @@ const FriendshipNetwork: React.FC = () => {
     updatePerson,
     deletePerson,
     createRelationship,
-    updateRelationship,
     deleteRelationship,
     refreshNetwork,
-  } = useFriendshipNetwork(id || null);
+    updatePersonPosition: updatePersonPositionImpl = (
+      id: string,
+      position: { x: number; y: number }
+    ) => {
+      console.warn('updatePersonPosition not implemented');
+      return Promise.resolve();
+    },
+  } = useFriendshipNetwork(id || null) as any;
 
-  // Local state for the UI
+  // Create a type-safe wrapper for updatePersonPosition
+  const updatePersonPosition = (id: string, position: { x: number; y: number }) => {
+    return updatePersonPositionImpl(id, position);
+  };
+
+  // Local UI state
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('add');
+  const [sidebarTab, setSidebarTab] = useState('overview');
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [interactionHint, setInteractionHint] = useState(true);
+
+  // Modal states
+  const [personModalOpen, setPersonModalOpen] = useState(false);
+  const [relationshipModalOpen, setRelationshipModalOpen] = useState(false);
+  const [personDetailModalOpen, setPersonDetailModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: string; id: string }>({
+    type: '',
+    id: '',
+  });
+
+  // Form errors
+  const [personFormErrors, setPersonFormErrors] = useState<FormErrors>({});
+  const [relationshipFormErrors, setRelationshipFormErrors] = useState<FormErrors>({});
+
+  // Form states
   const [newPerson, setNewPerson] = useState({
     firstName: '',
     lastName: '',
-    birthday: '',
+    birthday: null as Date | null,
+    notes: '',
   });
+
+  const [editPerson, setEditPerson] = useState<PersonNode | null>(null);
+
   const [newRelationship, setNewRelationship] = useState({
     source: '',
-    targets: [] as string[],
-    type: 'freund',
+    target: '',
+    type: 'freund' as RelationshipType,
     customType: '',
+    notes: '',
+    bidirectional: true,
   });
-  const [showOverrideModal, setShowOverrideModal] = useState(false);
-  const [overrideRelationship, setOverrideRelationship] = useState<any | null>(null);
-  const [graphSettings, setGraphSettings] = useState({
-    chargeStrength: -150,
-    linkDistance: 100,
-    collideRadius: 50,
-    velocityDecay: 0.4,
+
+  // Filter states
+  const [peopleFilter, setPeopleFilter] = useState('');
+  const [relationshipFilter, setRelationshipFilter] = useState('');
+  const [relationshipTypeFilter, setRelationshipTypeFilter] = useState('all');
+
+  // Settings state
+  const [settings, setSettings] = useState({
+    darkMode: true,
+    autoLayout: true,
     showLabels: true,
-    nodeSize: 20,
+    animationSpeed: 'medium',
+    highlightConnections: true,
+    nodeSize: 'medium',
   });
-  const [showSettings, setShowSettings] = useState(false);
-  const [graphData, setGraphData] = useState<any>({ nodes: [], links: [] });
-  
+
+  // Selected person state for highlighting
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
+
   // Get current network info
   const currentNetwork = networks.find(network => network._id === id);
 
-  // Redirect if network not found
+  // Effect for graph container dimensions
   useEffect(() => {
-    if (!loading && !currentNetwork && networks.length > 0) {
-      navigate('/networks');
-    }
-  }, [currentNetwork, networks, loading, navigate]);
+    if (!graphContainerRef.current) return;
 
-  // Update graph data when people or relationships change
+    const updateDimensions = () => {
+      if (graphContainerRef.current) {
+        const { width, height } = graphContainerRef.current.getBoundingClientRect();
+
+        setGraphDimensions(prev => {
+          if (prev.width !== width || prev.height !== height) {
+            return { width, height };
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Initial measurement
+    updateDimensions();
+
+    // Set up resize observer
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (graphContainerRef.current) {
+      resizeObserver.observe(graphContainerRef.current);
+    }
+
+    // Set up window resize listener
+    window.addEventListener('resize', updateDimensions);
+
+    // Clean up
+    return () => {
+      if (graphContainerRef.current) {
+        resizeObserver.unobserve(graphContainerRef.current);
+      }
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
+
+  // Update dimensions when sidebar is toggled
   useEffect(() => {
-    if (people && relationships) {
-      const nodes = people.map(person => ({
-        id: person.id,
-        nodeId: person._id,
+    const timeoutId = setTimeout(() => {
+      if (graphContainerRef.current) {
+        const { width, height } = graphContainerRef.current.getBoundingClientRect();
+        setGraphDimensions({ width, height });
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [sidebarOpen]);
+
+  // Dismiss interaction hint after 10 seconds
+  useEffect(() => {
+    if (interactionHint) {
+      const timer = setTimeout(() => {
+        setInteractionHint(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [interactionHint]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only apply shortcuts when not in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
+      // Ctrl/Cmd + / to open help modal
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setHelpModalOpen(true);
+      }
+
+      // + for zoom in
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleZoomIn();
+      }
+
+      // - for zoom out
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        handleZoomOut();
+      }
+
+      // 0 for reset zoom
+      if (e.key === '0') {
+        e.preventDefault();
+        handleResetZoom();
+      }
+
+      // n for new person
+      if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setPersonModalOpen(true);
+      }
+
+      // r for new relationship
+      if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setRelationshipModalOpen(true);
+      }
+
+      // s for toggle sidebar
+      if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Filtered people and relationships
+  const filteredPeople = people.filter(person =>
+    `${person.firstName} ${person.lastName}`.toLowerCase().includes(peopleFilter.toLowerCase())
+  );
+
+  const filteredRelationships = relationships.filter(rel => {
+    const source = people.find(p => p._id === rel.source);
+    const target = people.find(p => p._id === rel.target);
+
+    if (!source || !target) return false;
+
+    const matchesFilter =
+      `${source.firstName} ${source.lastName} ${target.firstName} ${target.lastName}`
+        .toLowerCase()
+        .includes(relationshipFilter.toLowerCase());
+
+    const matchesType = relationshipTypeFilter === 'all' || rel.type === relationshipTypeFilter;
+
+    return matchesFilter && matchesType;
+  });
+
+  // Add toast notification
+  const addToast = (message: string, type = 'success') => {
+    const id = Date.now();
+    setToasts(prevToasts => [...prevToasts, { id, message, type, onClose: () => removeToast(id) }]);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      removeToast(id);
+    }, 3000);
+  };
+
+  // Remove toast notification
+  const removeToast = (id: number) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  };
+
+  // Smart node placement for new people
+  const getSmartNodePosition = useCallback(() => {
+    const centerX = graphDimensions.width / 2;
+    const centerY = graphDimensions.height / 2;
+    const maxRadius = Math.min(graphDimensions.width, graphDimensions.height) * 0.4;
+    const totalNodes = people.length;
+    const index = totalNodes;
+
+    if (totalNodes <= 0) {
+      return { x: centerX, y: centerY };
+    } else if (totalNodes <= 4) {
+      const theta = index * 2.399;
+      const radius = maxRadius * 0.5 * Math.sqrt(index / (totalNodes + 1));
+      return {
+        x: centerX + radius * Math.cos(theta),
+        y: centerY + radius * Math.sin(theta),
+      };
+    } else if (totalNodes <= 11) {
+      const isOuterRing = index >= Math.floor(totalNodes / 2);
+      const ringIndex = isOuterRing ? index - Math.floor(totalNodes / 2) : index;
+      const ringTotal = isOuterRing
+        ? totalNodes - Math.floor(totalNodes / 2) + 1
+        : Math.floor(totalNodes / 2);
+      const ringRadius = isOuterRing ? maxRadius * 0.8 : maxRadius * 0.4;
+
+      const angle = (ringIndex / ringTotal) * 2 * Math.PI + (isOuterRing ? 0 : Math.PI / ringTotal);
+      return {
+        x: centerX + ringRadius * Math.cos(angle),
+        y: centerY + ringRadius * Math.sin(angle),
+      };
+    } else {
+      const clusterCount = Math.max(3, Math.floor(Math.sqrt(totalNodes)));
+      const clusterIndex = index % clusterCount;
+
+      const clusterAngle = (clusterIndex / clusterCount) * 2 * Math.PI;
+      const clusterDistance = maxRadius * 0.6;
+      const clusterX = centerX + clusterDistance * Math.cos(clusterAngle);
+      const clusterY = centerY + clusterDistance * Math.sin(clusterAngle);
+
+      const clusterRadius = maxRadius * 0.3;
+      const randomAngle = Math.random() * 2 * Math.PI;
+      const randomDistance = Math.random() * clusterRadius;
+
+      return {
+        x: clusterX + randomDistance * Math.cos(randomAngle),
+        y: clusterY + randomDistance * Math.sin(randomAngle),
+      };
+    }
+  }, [graphDimensions.width, graphDimensions.height, people.length]);
+
+  // Transform API data to graph format
+  const getGraphData = useCallback(() => {
+    if (!people || !relationships) {
+      return { nodes: [], edges: [] };
+    }
+
+    // Create nodes
+    const graphNodes = people.map(person => {
+      const connectionCount = relationships.filter(
+        r => r.source === person._id || r.target === person._id
+      ).length;
+
+      // Determine if node should be highlighted
+      const isSelected = person._id === selectedPersonId;
+      const isConnected = selectedPersonId
+        ? relationships.some(
+            r =>
+              (r.source === selectedPersonId && r.target === person._id) ||
+              (r.target === selectedPersonId && r.source === person._id)
+          )
+        : false;
+
+      // Determine background color based on connection count or highlight state
+      let bgColor;
+      if (isSelected) {
+        bgColor = '#F472B6'; // Pink-400 for selected
+      } else if (isConnected && settings.highlightConnections) {
+        bgColor = '#A78BFA'; // Violet-400 for connected
+      } else if (connectionCount === 0) {
+        bgColor = '#94A3B8'; // Slate-400
+      } else if (connectionCount === 1) {
+        bgColor = '#38BDF8'; // Sky-400
+      } else if (connectionCount <= 3) {
+        bgColor = '#818CF8'; // Indigo-400
+      } else if (connectionCount <= 5) {
+        bgColor = '#A78BFA'; // Violet-400
+      } else {
+        bgColor = '#F472B6'; // Pink-400
+      }
+
+      return {
+        id: person._id,
         firstName: person.firstName,
         lastName: person.lastName,
-        label: `${person.firstName} ${person.lastName.charAt(0)}.`,
-        birthday: person.birthday,
-        x: person.position?.x,
-        y: person.position?.y,
-        // Dynamic size based on connection count
-        val: 1 + relationships.filter(r => r.source === person.id || r.target === person.id).length * 0.5
-      }));
-
-      const links = relationships.map(rel => {
-        // Different colors for different relationship types
-        let color = '#9CA3AF'; // Default gray
-        if (rel.type === 'freund') color = '#3B82F6'; // Blue
-        if (rel.type === 'partner') color = '#EC4899'; // Pink
-        if (rel.type === 'familie') color = '#10B981'; // Green
-        if (rel.type === 'arbeitskolleg') color = '#F59E0B'; // Yellow
-
-        return {
-          source: rel.source,
-          target: rel.target,
-          id: rel.id,
-          relId: rel._id,
-          type: rel.type,
-          color,
-          // Visual elements
-          value: rel.type === 'partner' ? 3 : rel.type === 'familie' ? 2 : 1,
-        };
-      });
-
-      setGraphData({ nodes, links });
-    }
-  }, [people, relationships]);
-
-  // Save node positions when they are dragged
-  const handleNodeDragEnd = (node: any) => {
-    if (node && node.x && node.y && node.nodeId) {
-      updatePerson(node.nodeId, {
-        position: { x: node.x, y: node.y }
-      });
-    }
-  };
-
-  // Add a new person to the network
-  const handleAddPerson = async () => {
-    if (newPerson.firstName.trim() === '' || newPerson.lastName.trim() === '') {
-      alert('Please enter both first and last name');
-      return;
-    }
-
-    try {
-      await createPerson({
-        firstName: newPerson.firstName.trim(),
-        lastName: newPerson.lastName.trim(),
-        birthday: newPerson.birthday || undefined,
-        position: {
-          // Generate a random position within the viewport
-          x: 100 + Math.random() * 400,
-          y: 100 + Math.random() * 300,
-        },
-      });
-
-      setNewPerson({
-        firstName: '',
-        lastName: '',
-        birthday: '',
-      });
-    } catch (error) {
-      console.error('Error adding person:', error);
-      alert('Failed to add person.');
-    }
-  };
-
-  // Add new relationships between source person and multiple target people
-  const handleAddRelationship = async () => {
-    const { source, targets, type, customType } = newRelationship;
-
-    if (source === '' || targets.length === 0) {
-      alert('Please select source and at least one target person');
-      return;
-    }
-
-    const actualType = type === 'custom' ? customType.trim() : type;
-
-    if (type === 'custom' && customType.trim() === '') {
-      alert('Please enter a custom relationship type');
-      return;
-    }
-
-    // Check if any relationships already exist
-    const existingRelationships: any[] = [];
-    targets.forEach(target => {
-      if (source !== target) {
-        const existingEdge = relationships.find(
-          edge =>
-            (edge.source === source && edge.target === target) ||
-            (edge.source === target && edge.target === source)
-        );
-
-        if (existingEdge) {
-          existingRelationships.push({
-            source,
-            target,
-            existingType: existingEdge.type,
-            newType: actualType,
-            edgeId: existingEdge.id,
-          });
-        }
-      }
+        connectionCount,
+        bgColor,
+        x: person.position?.x || 0,
+        y: person.position?.y || 0,
+        showLabel: settings.showLabels,
+      };
     });
 
-    if (existingRelationships.length > 0) {
-      // Show override modal
-      setOverrideRelationship({
-        existingRelationships,
-        newRelationships: targets
-          .filter(
-            target => source !== target && !existingRelationships.some(rel => rel.target === target)
-          )
-          .map(target => ({ source, target, type: actualType })),
+    // Create edges
+    const graphEdges = relationships.map(rel => {
+      const color = RELATIONSHIP_COLORS[rel.type] || RELATIONSHIP_COLORS.custom;
+      const width = rel.type === 'partner' ? 4 : rel.type === 'familie' ? 3 : 2;
+
+      // Highlight edges connected to selected node
+      const isHighlighted =
+        selectedPersonId &&
+        settings.highlightConnections &&
+        (rel.source === selectedPersonId || rel.target === selectedPersonId);
+
+      return {
+        id: rel._id,
+        source: rel.source,
+        target: rel.target,
+        color: isHighlighted ? '#F472B6' : color, // Pink color for highlighted edges
+        width: isHighlighted ? width + 1 : width, // Slightly thicker for highlighted
+        type: rel.type,
+        customType: rel.customType,
+      };
+    });
+
+    return { nodes: graphNodes, edges: graphEdges };
+  }, [people, relationships, settings.showLabels, settings.highlightConnections, selectedPersonId]);
+
+  // Validate person form
+  const validatePersonForm = (person: typeof newPerson): FormErrors => {
+    const errors: FormErrors = {};
+
+    if (!person.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+
+    if (!person.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
+
+    return errors;
+  };
+
+  // Validate relationship form
+  const validateRelationshipForm = (relationship: typeof newRelationship): FormErrors => {
+    const errors: FormErrors = {};
+
+    if (!relationship.source) {
+      errors.source = 'Source person is required';
+    }
+
+    if (!relationship.target) {
+      errors.target = 'Target person is required';
+    }
+
+    if (relationship.source === relationship.target) {
+      errors.target = 'Source and target cannot be the same person';
+    }
+
+    if (relationship.type === 'custom' && !relationship.customType.trim()) {
+      errors.customType = 'Custom relationship type is required';
+    }
+
+    // Check if relationship already exists
+    if (relationship.source && relationship.target) {
+      const existingRelationship = relationships.find(
+        r =>
+          (r.source === relationship.source && r.target === relationship.target) ||
+          (relationship.bidirectional &&
+            r.source === relationship.target &&
+            r.target === relationship.source)
+      );
+
+      if (existingRelationship) {
+        errors.general = 'This relationship already exists';
+      }
+    }
+
+    return errors;
+  };
+
+  // Handle person form submission
+  const handlePersonSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors = validatePersonForm(newPerson);
+    setPersonFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
+
+    // Create person with smart positioning
+    const position = getSmartNodePosition();
+
+    createPerson({
+      firstName: newPerson.firstName.trim(),
+      lastName: newPerson.lastName.trim(),
+      birthday: newPerson.birthday?.toISOString() || undefined,
+      notes: newPerson.notes,
+      position,
+    });
+
+    // Reset form and close modal
+    setNewPerson({
+      firstName: '',
+      lastName: '',
+      birthday: null,
+      notes: '',
+    });
+
+    setPersonModalOpen(false);
+    addToast('Person added successfully');
+  };
+
+  // Handle person update
+  const handleUpdatePerson = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editPerson) return;
+
+    const errors = validatePersonForm(editPerson as any);
+    setPersonFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
+
+    updatePerson(editPerson._id, {
+      firstName: editPerson.firstName,
+      lastName: editPerson.lastName,
+      birthday: editPerson.birthday ? new Date(editPerson.birthday).toISOString() : undefined,
+      notes: editPerson.notes,
+    });
+
+    setEditPerson(null);
+    setPersonDetailModalOpen(false);
+    addToast('Person updated successfully');
+  };
+
+  // Handle relationship form submission
+  const handleRelationshipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors = validateRelationshipForm(newRelationship);
+    setRelationshipFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) return;
+
+    const { source, target, type, customType, notes, bidirectional } = newRelationship;
+
+    // Create the relationship
+    createRelationship({
+      source,
+      target,
+      type,
+      customType: type === 'custom' ? customType : undefined,
+      notes,
+    });
+
+    // Create bidirectional relationship if selected
+    if (bidirectional && source !== target) {
+      createRelationship({
+        source: target,
+        target: source,
+        type,
+        customType: type === 'custom' ? customType : undefined,
+        notes,
       });
-      setShowOverrideModal(true);
-      return;
     }
 
-    // Process each target for new relationships
-    const addPromises = targets
-      .map(target => {
-        if (source !== target) {
-          return createRelationship({
-            source,
-            target,
-            type: type as any,
-            customType: type === 'custom' ? customType : undefined,
-          });
-        }
-        return Promise.resolve();
-      })
-      .filter(Boolean);
+    // Reset form and close modal
+    setNewRelationship({
+      source: '',
+      target: '',
+      type: 'freund',
+      customType: '',
+      notes: '',
+      bidirectional: true,
+    });
 
-    if (addPromises.length === 0) {
-      alert('No valid relationships to add.');
-      return;
-    }
-
-    try {
-      await Promise.all(addPromises);
-      setNewRelationship({ source: '', targets: [], type: 'freund', customType: '' });
-    } catch (error) {
-      console.error('Error adding relationships:', error);
-      alert('Failed to add one or more relationships.');
-    }
+    setRelationshipModalOpen(false);
+    addToast(`Relationship${bidirectional ? 's' : ''} created successfully`);
   };
 
-  // Handle confirming relationship overrides
-  const handleConfirmOverride = async () => {
-    if (!overrideRelationship) return;
+  // Handle deletion confirmation
+  const confirmDelete = (type: string, id: string) => {
+    setItemToDelete({ type, id });
+    setDeleteConfirmOpen(true);
+  };
 
-    const { existingRelationships, newRelationships } = overrideRelationship;
+  // Execute deletion
+  const executeDelete = () => {
+    const { type, id } = itemToDelete;
 
-    try {
-      // Remove existing relationships that will be overridden
-      await Promise.all(existingRelationships.map(rel => deleteRelationship(rel.edgeId)));
-
-      // Add new overridden relationships
-      await Promise.all(
-        existingRelationships.map(rel =>
-          createRelationship({
-            source: rel.source,
-            target: rel.target,
-            type: rel.newType as any,
-            customType: rel.newType === 'custom' ? rel.customType : undefined,
-          })
-        )
-      );
-
-      // Add completely new relationships
-      await Promise.all(
-        newRelationships.map(rel =>
-          createRelationship({
-            source: rel.source,
-            target: rel.target,
-            type: rel.type as any,
-            customType: rel.type === 'custom' ? rel.customType : undefined,
-          })
-        )
-      );
-
-      setShowOverrideModal(false);
-      setOverrideRelationship(null);
-      setNewRelationship({ source: '', targets: [], type: 'freund', customType: '' });
-    } catch (error) {
-      console.error('Error overriding relationships:', error);
-      alert('Failed to override relationships.');
+    if (type === 'person') {
+      deletePerson(id);
+      addToast('Person deleted');
+    } else if (type === 'relationship') {
+      deleteRelationship(id);
+      addToast('Relationship deleted');
     }
   };
 
-  // Handle canceling relationship overrides
-  const handleCancelOverride = async () => {
-    // If there are new relationships that don't need overrides, add those
-    if (overrideRelationship && overrideRelationship.newRelationships.length > 0) {
-      try {
-        await Promise.all(
-          overrideRelationship.newRelationships.map(rel =>
-            createRelationship({
-              source: rel.source,
-              target: rel.target,
-              type: rel.type as any,
-              customType: rel.type === 'custom' ? rel.customType : undefined,
-            })
-          )
-        );
-      } catch (error) {
-        console.error('Error adding new relationships:', error);
-      }
-    }
-
-    setShowOverrideModal(false);
-    setOverrideRelationship(null);
+  // Open person detail modal
+  const openPersonDetail = (person: PersonNode) => {
+    setEditPerson({ ...person });
+    setPersonDetailModalOpen(true);
   };
 
-  // Handle multiple selections in the targets dropdown
-  const handleTargetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setNewRelationship({ ...newRelationship, targets: selectedOptions });
+  // Handle zoom controls
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 2.5));
   };
 
-  // Delete a node and its associated edges
-  const handleDeleteNode = async (id: string) => {
-    if (
-      window.confirm(
-        'Are you sure you want to delete this person? All their relationships will also be deleted.'
-      )
-    ) {
-      try {
-        await deletePerson(id);
-      } catch (error) {
-        console.error('Error deleting person:', error);
-        alert('Failed to delete person.');
-      }
-    }
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
   };
 
-  // Get relationship type label
-  const getRelationshipLabel = (type: string) => {
-    switch (type) {
-      case 'freund':
-        return 'Freund/in';
-      case 'partner':
-        return 'Partner/in';
-      case 'familie':
-        return 'Familie/Verwandschaft';
-      case 'arbeitskolleg':
-        return 'Arbeitskolleg/innen';
-      default:
-        return type;
-    }
+  const handleResetZoom = () => {
+    setZoomLevel(1);
   };
 
-  // Remove a relationship between two people
-  const handleRemoveRelationship = async (edgeId: string) => {
-    try {
-      await deleteRelationship(edgeId);
-    } catch (error) {
-      console.error('Error removing relationship:', error);
-      alert('Failed to remove relationship.');
-    }
-  };
-
-  // Graph control functions
-  const zoomIn = () => {
-    if (graphRef.current) {
-      graphRef.current.zoom(1.2);
-    }
-  };
-
-  const zoomOut = () => {
-    if (graphRef.current) {
-      graphRef.current.zoom(0.8);
-    }
-  };
-
-  const centerGraph = () => {
-    if (graphRef.current) {
-      graphRef.current.zoomToFit(400);
-    }
-  };
-
-  const refreshGraph = () => {
-    refreshNetwork();
-  };
-
-  // Toggle sidebar visibility
+  // Toggle sidebar
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Handle physics settings change
-  const handleSettingChange = (setting: string, value: number | boolean) => {
-    setGraphSettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
+  // Handle refresh network
+  const handleRefreshNetwork = () => {
+    refreshNetwork();
+    addToast('Network refreshed');
   };
 
+  // Handle node click to select and highlight
+  const handleNodeClick = (nodeId: string) => {
+    // Toggle selection
+    if (selectedPersonId === nodeId) {
+      setSelectedPersonId(null);
+    } else {
+      setSelectedPersonId(nodeId);
+    }
+
+    // Open person details
+    const person = people.find(p => p._id === nodeId);
+    if (person) {
+      openPersonDetail(person);
+    }
+  };
+
+  // Sort people alphabetically
+  const sortedPeople = [...filteredPeople].sort((a, b) => {
+    const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+    const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-slate-900">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-16 h-16 border-t-4 border-b-4 border-indigo-500 border-solid rounded-full animate-spin"></div>
+          <p className="text-white text-lg">Loading your network...</p>
+        </div>
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen bg-slate-900">
-        <div className="bg-red-500 text-white p-4 rounded-lg shadow-lg max-w-md">
-          <h3 className="text-lg font-bold mb-2">Error</h3>
-          <p>{error}</p>
-          <button 
-            className="mt-4 bg-white text-red-500 px-4 py-2 rounded font-bold"
+        <div className="bg-red-500/20 border border-red-500 text-white p-6 rounded-lg shadow-lg max-w-md">
+          <h3 className="text-lg font-bold mb-3 flex items-center">
+            <FaExclamationTriangle className="mr-2 text-red-500" /> Error
+          </h3>
+          <p className="mb-4">{error}</p>
+          <Button
+            variant="primary"
+            fullWidth
             onClick={() => navigate('/networks')}
+            icon={<FaArrowLeft />}
           >
             Back to Networks
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
+  // Generate graph data
+  const graphData = getGraphData();
+
   return (
     <div className="flex h-screen bg-slate-900 text-white overflow-hidden">
-      {/* Mobile Toggle Button */}
-      <button 
+      {/* Sidebar Toggle Button */}
+      <button
         onClick={toggleSidebar}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-indigo-600 hover:bg-indigo-700 
+        className="fixed top-4 left-4 z-50 bg-indigo-600 hover:bg-indigo-700 
           text-white p-3 rounded-full shadow-lg transition-all duration-300"
+        aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
       >
-        {sidebarOpen ? <FaTimes /> : <FaUserPlus />}
+        {sidebarOpen ? <FaChevronLeft /> : <FaChevronRight />}
       </button>
 
       {/* Sidebar */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div 
-            initial={{ x: -320 }} 
-            animate={{ x: 0 }} 
-            exit={{ x: -320 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-80 bg-slate-800 border-r border-slate-700 h-full overflow-y-auto z-10 shadow-xl"
-          >
-            <div className="p-5">
-              <h2 className="text-xl font-bold text-indigo-400 mb-4 truncate">
-                {currentNetwork?.name || 'Relationship Network'}
-              </h2>
-
-              {/* Tabs */}
-              <div className="flex border-b border-slate-700 mb-6">
-                <button 
-                  className={`flex-1 py-2 font-medium ${activeTab === 'add' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400'}`}
-                  onClick={() => setActiveTab('add')}
-                >
-                  Add
-                </button>
-                <button 
-                  className={`flex-1 py-2 font-medium ${activeTab === 'view' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400'}`}
-                  onClick={() => setActiveTab('view')}
-                >
-                  View
-                </button>
-                <button 
-                  className={`flex-1 py-2 font-medium ${activeTab === 'settings' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-400'}`}
-                  onClick={() => setActiveTab('settings')}
-                >
-                  <FaCog />
-                </button>
+      <div
+        className={`bg-slate-800 border-r border-slate-700 h-full transition-all duration-300 
+        ease-in-out z-30 ${sidebarOpen ? 'w-72' : 'w-0'}`}
+      >
+        <Transition
+          show={sidebarOpen}
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="h-full overflow-y-auto p-4">
+            {/* Network Header */}
+            <div className="mb-6 mt-8">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-2xl font-bold text-white flex items-center">
+                  <span className="truncate">{currentNetwork?.name || 'Relationship Network'}</span>
+                </h2>
+                <Tooltip text="Back to networks">
+                  <button
+                    onClick={() => navigate('/networks')}
+                    className="p-2 text-slate-400 hover:text-indigo-400 transition-colors"
+                  >
+                    <FaHome />
+                  </button>
+                </Tooltip>
               </div>
+              <p className="text-slate-400 text-sm">Visualize your connections</p>
+            </div>
 
-              {activeTab === 'add' && (
-                <>
-                  {/* Add Person Form */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center text-indigo-300">
-                      <FaUserPlus className="mr-2" /> Add Person
-                    </h3>
-                    <div className="bg-slate-900 p-4 rounded-lg">
-                      <input
-                        type="text"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3 
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        placeholder="First Name"
-                        value={newPerson.firstName}
-                        onChange={e => setNewPerson({ ...newPerson, firstName: e.target.value })}
-                      />
-                      <input
-                        type="text"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3 
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        placeholder="Last Name"
-                        value={newPerson.lastName}
-                        onChange={e => setNewPerson({ ...newPerson, lastName: e.target.value })}
-                      />
-                      <input
-                        type="date"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3 
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        placeholder="Birthday (Optional)"
-                        value={newPerson.birthday}
-                        onChange={e => setNewPerson({ ...newPerson, birthday: e.target.value })}
-                      />
-                      <button
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 
-                          rounded-md transition-colors duration-200 flex items-center justify-center"
-                        onClick={handleAddPerson}
-                      >
-                        <FaUserPlus className="mr-2" /> Add Person
-                      </button>
+            {/* Network Stats */}
+            <NetworkStats people={people} relationships={relationships} />
+
+            {/* Action Buttons */}
+            <div className="flex space-x-2 mb-6">
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => setPersonModalOpen(true)}
+                icon={<FaUserPlus />}
+              >
+                Add Person
+              </Button>
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => setRelationshipModalOpen(true)}
+                icon={<FaUserFriends />}
+              >
+                Add Relation
+              </Button>
+            </div>
+
+            {/* Sidebar Tabs */}
+            <div className="flex border-b border-slate-700 mb-4">
+              <button
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${
+                  sidebarTab === 'overview'
+                    ? 'text-indigo-400 border-b-2 border-indigo-400'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+                onClick={() => setSidebarTab('overview')}
+              >
+                <FaInfo className="mr-2" /> Overview
+              </button>
+              <button
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${
+                  sidebarTab === 'people'
+                    ? 'text-indigo-400 border-b-2 border-indigo-400'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+                onClick={() => setSidebarTab('people')}
+              >
+                <FaUserCircle className="mr-2" /> People
+              </button>
+              <button
+                className={`flex-1 py-2 font-medium flex items-center justify-center ${
+                  sidebarTab === 'relations'
+                    ? 'text-indigo-400 border-b-2 border-indigo-400'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+                onClick={() => setSidebarTab('relations')}
+              >
+                <FaUserFriends className="mr-2" /> Relations
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {sidebarTab === 'overview' && (
+              <div className="space-y-4">
+                <Card>
+                  <CardBody>
+                    <h3 className="font-medium mb-2 text-indigo-400">About This Network</h3>
+                    <p className="text-sm text-slate-300 mb-3">
+                      This interactive visualization shows relationships between people in your
+                      network.
+                    </p>
+                    <ul className="text-xs text-slate-400 space-y-1">
+                      <li className="flex items-start">
+                        <span className="text-indigo-400 mr-2">•</span>
+                        <span>Drag nodes to rearrange the network</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-400 mr-2">•</span>
+                        <span>Click on people for more details</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-400 mr-2">•</span>
+                        <span>Hover over connections to see relationship types</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-indigo-400 mr-2">•</span>
+                        <span>Use the controls to zoom in/out and center the view</span>
+                      </li>
+                    </ul>
+                  </CardBody>
+                </Card>
+
+                <Card>
+                  <CardBody>
+                    <h3 className="font-medium mb-2 text-indigo-400">Legend</h3>
+                    <div className="space-y-2">
+                      {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (
+                        <div key={type} className="flex items-center text-sm">
+                          <div
+                            className="w-4 h-4 rounded-full mr-2"
+                            style={{ backgroundColor: color }}
+                          ></div>
+                          <span className="capitalize">
+                            {RELATIONSHIP_LABELS[type as RelationshipType]}
+                          </span>
+                        </div>
+                      ))}
                     </div>
+                  </CardBody>
+                </Card>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => setSettingsModalOpen(true)}
+                    icon={<FaCog />}
+                  >
+                    Settings
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    onClick={() => setHelpModalOpen(true)}
+                    icon={<FaInfo />}
+                  >
+                    Help
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {sidebarTab === 'people' && (
+              <div>
+                <div className="flex items-center mb-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-8 pr-3
+                        text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                      placeholder="Search people..."
+                      value={peopleFilter}
+                      onChange={e => setPeopleFilter(e.target.value)}
+                    />
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                   </div>
+                </div>
 
-                  {/* Add Relationship Form */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3 flex items-center text-indigo-300">
-                      <FaUserFriends className="mr-2" /> Add Relationship
-                    </h3>
-                    <div className="bg-slate-900 p-4 rounded-lg">
-                      <select
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3 
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        value={newRelationship.source}
-                        onChange={e => setNewRelationship({ ...newRelationship, source: e.target.value })}
-                      >
-                        <option value="">Select first person</option>
-                        {people.map(node => (
-                          <option key={`source-${node.id}`} value={node.id}>
-                            {node.firstName} {node.lastName}
-                          </option>
-                        ))}
-                      </select>
+                <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto pr-1">
+                  {sortedPeople.length > 0 ? (
+                    sortedPeople.map(person => {
+                      const connectionCount = relationships.filter(
+                        r => r.source === person._id || r.target === person._id
+                      ).length;
 
-                      <select
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-1
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        multiple
-                        size={Math.min(people.length, 5)}
-                        value={newRelationship.targets}
-                        onChange={handleTargetChange}
-                      >
-                        {people.map(node => (
-                          <option key={`target-${node.id}`} value={node.id}>
-                            {node.firstName} {node.lastName}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-slate-400 mb-3">Hold Ctrl/Cmd to select multiple people</p>
-
-                      <select
-                        className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                        value={newRelationship.type}
-                        onChange={e => setNewRelationship({ ...newRelationship, type: e.target.value })}
-                      >
-                        <option value="freund">Freund/in</option>
-                        <option value="partner">Partner/in</option>
-                        <option value="familie">Familie/Verwandschaft</option>
-                        <option value="arbeitskolleg">Arbeitskolleg/innen</option>
-                        <option value="custom">Custom...</option>
-                      </select>
-
-                      {newRelationship.type === 'custom' && (
-                        <input
-                          type="text"
-                          className="w-full bg-slate-800 border border-slate-700 rounded-md p-2 mb-3
-                            focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
-                          placeholder="Enter custom relationship type"
-                          value={newRelationship.customType}
-                          onChange={e =>
-                            setNewRelationship({ ...newRelationship, customType: e.target.value })
-                          }
-                        />
-                      )}
-
-                      <button
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4
-                          rounded-md transition-colors duration-200 flex items-center justify-center"
-                        onClick={handleAddRelationship}
-                      >
-                        <FaUserFriends className="mr-2" /> Add Relationship
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'view' && (
-                <>
-                  {/* People List */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center text-indigo-300">
-                      <FaUserPlus className="mr-2" /> People ({people.length})
-                    </h3>
-                    {people.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        {people.map(node => (
-                          <div key={node.id} className="bg-slate-900 p-3 rounded-md flex justify-between items-center">
-                            <span className="truncate mr-2">{node.firstName} {node.lastName}</span>
-                            <button 
-                              onClick={() => handleDeleteNode(node.id)}
-                              className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-slate-800 transition-colors"
-                              title="Delete Person"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-slate-400 text-center py-4 bg-slate-900 rounded-md">
-                        No people added yet.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Relationships List */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3 flex items-center text-indigo-300">
-                      <FaUserFriends className="mr-2" /> Relationships ({relationships.length})
-                    </h3>
-                    {relationships.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        {relationships.map(edge => {
-                          const source = people.find(n => n.id === edge.source);
-                          const target = people.find(n => n.id === edge.target);
-                          if (!source || !target) return null;
-
-                          return (
-                            <div key={edge.id} className="bg-slate-900 p-3 rounded-md">
-                              <div className="flex justify-between items-center">
-                                <div className="truncate">
-                                  <span>{source.firstName} {source.lastName.charAt(0)}.</span>
-                                  <span className="mx-2">↔</span>
-                                  <span>{target.firstName} {target.lastName.charAt(0)}.</span>
-                                </div>
-                                <button 
-                                  onClick={() => handleRemoveRelationship(edge.id)}
-                                  className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-slate-800 transition-colors ml-2"
-                                  title="Delete Relationship"
-                                >
-                                  <FaTrash />
-                                </button>
-                              </div>
-                              <div className="text-xs text-indigo-300 mt-1">
-                                {getRelationshipLabel(edge.type)}
+                      return (
+                        <div
+                          key={person._id}
+                          className={`bg-slate-700 rounded-lg p-3 group hover:bg-slate-600 transition-colors 
+                          cursor-pointer border-l-4 ${
+                            selectedPersonId === person._id
+                              ? 'border-l-pink-500'
+                              : connectionCount > 0
+                                ? 'border-l-indigo-500'
+                                : 'border-l-slate-700'
+                          }`}
+                          onClick={() => {
+                            openPersonDetail(person);
+                            setSelectedPersonId(person._id);
+                          }}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h4 className="font-medium">
+                                {person.firstName} {person.lastName}
+                              </h4>
+                              <div className="flex items-center text-xs text-slate-400 mt-1">
+                                <span
+                                  className="inline-block w-2 h-2 rounded-full mr-1"
+                                  style={{
+                                    backgroundColor: connectionCount > 0 ? '#60A5FA' : '#94A3B8',
+                                  }}
+                                ></span>
+                                {connectionCount} connection{connectionCount !== 1 ? 's' : ''}
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-slate-400 text-center py-4 bg-slate-900 rounded-md">
-                        No relationships added yet.
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {activeTab === 'settings' && (
-                <div className="bg-slate-900 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4 text-indigo-300">Graph Physics Settings</h3>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Charge Strength ({graphSettings.chargeStrength})
-                    </label>
-                    <input 
-                      type="range" 
-                      min="-300" 
-                      max="-30" 
-                      value={graphSettings.chargeStrength}
-                      onChange={(e) => handleSettingChange('chargeStrength', parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Tooltip text="Edit">
+                                <button
+                                  className="p-1 text-slate-400 hover:text-indigo-400 transition-colors"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    openPersonDetail(person);
+                                  }}
+                                >
+                                  <FaEdit size={14} />
+                                </button>
+                              </Tooltip>
+                              <Tooltip text="Delete">
+                                <button
+                                  className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    confirmDelete('person', person._id);
+                                  }}
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <EmptyState
+                      title={peopleFilter ? 'No matches found' : 'No people yet'}
+                      description={
+                        peopleFilter
+                          ? 'Try adjusting your search criteria'
+                          : 'Add people to start building your network'
+                      }
+                      icon={<FaUserCircle className="text-2xl text-slate-400" />}
+                      action={
+                        !peopleFilter && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setPersonModalOpen(true)}
+                            icon={<FaUserPlus />}
+                          >
+                            Add Person
+                          </Button>
+                        )
+                      }
                     />
-                    <p className="text-xs text-slate-400 mt-1">Stronger negative values push nodes apart more</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Link Distance ({graphSettings.linkDistance})
-                    </label>
-                    <input 
-                      type="range" 
-                      min="30" 
-                      max="200" 
-                      value={graphSettings.linkDistance}
-                      onChange={(e) => handleSettingChange('linkDistance', parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <p className="text-xs text-slate-400 mt-1">Higher values increase distance between connected nodes</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Collision Radius ({graphSettings.collideRadius})
-                    </label>
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="100" 
-                      value={graphSettings.collideRadius}
-                      onChange={(e) => handleSettingChange('collideRadius', parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <p className="text-xs text-slate-400 mt-1">Higher values prevent node overlap more</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Velocity Decay ({graphSettings.velocityDecay})
-                    </label>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1" 
-                      step="0.01"
-                      value={graphSettings.velocityDecay}
-                      onChange={(e) => handleSettingChange('velocityDecay', parseFloat(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <p className="text-xs text-slate-400 mt-1">Higher values make the graph settle faster</p>
-                  </div>
-
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-300 mb-1">
-                      Node Size ({graphSettings.nodeSize})
-                    </label>
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="40" 
-                      value={graphSettings.nodeSize}
-                      onChange={(e) => handleSettingChange('nodeSize', parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      id="showLabels"
-                      checked={graphSettings.showLabels}
-                      onChange={(e) => handleSettingChange('showLabels', e.target.checked)}
-                      className="w-4 h-4 rounded bg-slate-700 border-slate-600 focus:ring-indigo-500 focus:ring-2"
-                    />
-                    <label htmlFor="showLabels" className="ml-2 text-sm text-slate-300">
-                      Show Labels
-                    </label>
-                  </div>
-
-                  <button
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 
-                      rounded-md transition-colors duration-200 mt-2"
-                    onClick={centerGraph}
-                  >
-                    Reset View
-                  </button>
+                  )}
                 </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </div>
+            )}
+
+            {sidebarTab === 'relations' && (
+              <div>
+                <div className="flex items-center mb-3">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 pl-8 pr-3
+                        text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                      placeholder="Search relationships..."
+                      value={relationshipFilter}
+                      onChange={e => setRelationshipFilter(e.target.value)}
+                    />
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+
+                <div className="flex mb-3 overflow-x-auto pb-2 space-x-1">
+                  <button
+                    className={`px-3 py-1 text-xs rounded-full whitespace-nowrap ${
+                      relationshipTypeFilter === 'all'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    }`}
+                    onClick={() => setRelationshipTypeFilter('all')}
+                  >
+                    All Types
+                  </button>
+                  {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (
+                    <button
+                      key={type}
+                      className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex items-center ${
+                        relationshipTypeFilter === type
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                      onClick={() => setRelationshipTypeFilter(type as RelationshipType)}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full mr-1"
+                        style={{ backgroundColor: color }}
+                      ></span>
+                      <span className="capitalize">
+                        {RELATIONSHIP_LABELS[type as RelationshipType]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="space-y-2 max-h-[calc(100vh-390px)] overflow-y-auto pr-1">
+                  {filteredRelationships.length > 0 ? (
+                    filteredRelationships.map(rel => {
+                      const source = people.find(p => p._id === rel.source);
+                      const target = people.find(p => p._id === rel.target);
+                      if (!source || !target) return null;
+
+                      return (
+                        <div
+                          key={rel._id}
+                          className={`bg-slate-700 rounded-lg p-3 group hover:bg-slate-600 transition-colors 
+                          border-l-4 ${
+                            selectedPersonId === rel.source || selectedPersonId === rel.target
+                              ? 'border-l-pink-500'
+                              : 'border-l-slate-700'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="flex items-center">
+                                <span
+                                  className={`font-medium ${selectedPersonId === rel.source ? 'text-pink-400' : ''}`}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setSelectedPersonId(rel.source);
+                                    openPersonDetail(source);
+                                  }}
+                                >
+                                  {source.firstName} {source.lastName}
+                                </span>
+                                <span className="mx-2 text-slate-400">→</span>
+                                <span
+                                  className={`font-medium ${selectedPersonId === rel.target ? 'text-pink-400' : ''}`}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setSelectedPersonId(rel.target);
+                                    const targetPerson = people.find(p => p._id === rel.target);
+                                    if (targetPerson) openPersonDetail(targetPerson);
+                                  }}
+                                >
+                                  {target.firstName} {target.lastName}
+                                </span>
+                              </div>
+                              <div className="flex items-center text-xs text-slate-400 mt-1">
+                                <span
+                                  className="inline-block w-2 h-2 rounded-full mr-1"
+                                  style={{ backgroundColor: RELATIONSHIP_COLORS[rel.type] }}
+                                ></span>
+                                <span className="capitalize">
+                                  {rel.type === 'custom'
+                                    ? rel.customType
+                                    : RELATIONSHIP_LABELS[rel.type]}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Tooltip text="Delete">
+                                <button
+                                  className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                  onClick={() => confirmDelete('relationship', rel._id)}
+                                >
+                                  <FaTrash size={14} />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <EmptyState
+                      title={
+                        relationshipFilter || relationshipTypeFilter !== 'all'
+                          ? 'No matches found'
+                          : 'No relationships yet'
+                      }
+                      description={
+                        relationshipFilter || relationshipTypeFilter !== 'all'
+                          ? 'Try adjusting your search criteria'
+                          : 'Create relationships between people to visualize connections'
+                      }
+                      icon={<FaUserFriends className="text-2xl text-slate-400" />}
+                      action={
+                        !relationshipFilter &&
+                        relationshipTypeFilter === 'all' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setRelationshipModalOpen(true)}
+                            icon={<FaUserFriends />}
+                          >
+                            Add Relationship
+                          </Button>
+                        )
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Transition>
+      </div>
 
       {/* Main Graph Area */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-0">
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            nodeLabel={node => `${node.firstName} ${node.lastName}`}
-            nodeRelSize={graphSettings.nodeSize}
-            nodeVal={node => node.val * graphSettings.nodeSize / 10}
-            nodeColor={node => {
-              // Different colors for different node types or connections
-              const connCount = graphData.links.filter(
-                (link: any) => link.source.id === node.id || link.target.id === node.id
-              ).length;
-              
-              // Color scales from blue to purple based on number of connections
-              return connCount === 0 ? '#4B5563' :  // Gray for isolated nodes
-                connCount < 3 ? '#3B82F6' :         // Blue for few connections
-                connCount < 6 ? '#8B5CF6' :         // Indigo for moderate
-                '#A855F7';                          // Purple for many
-            }}
-            linkWidth={link => link.value}
-            linkColor={link => link.color}
-            nodeCanvasObjectMode={() => graphSettings.showLabels ? 'after' : undefined}
-            nodeCanvasObject={(node, ctx, globalScale) => {
-              if (!graphSettings.showLabels) return;
-              
-              const label = node.label;
-              const fontSize = 12/globalScale;
-              ctx.font = `${fontSize}px Sans-Serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-              
-              // Draw background for better readability
-              const textWidth = ctx.measureText(label).width;
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-              ctx.fillRect(
-                node.x - textWidth/2 - 2,
-                node.y + graphSettings.nodeSize/globalScale + 2,
-                textWidth + 4,
-                fontSize + 2
-              );
-              
-              // Draw text
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-              ctx.fillText(
-                label,
-                node.x,
-                node.y + graphSettings.nodeSize/globalScale + fontSize/2 + 3
-              );
-            }}
-            linkDirectionalParticles={3}
-            linkDirectionalParticleWidth={link => link.value}
-            linkDirectionalParticleSpeed={0.005}
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={graphSettings.velocityDecay}
-            cooldownTicks={100}
-            onNodeDragEnd={handleNodeDragEnd}
-            // Physics settings
-            d3Force={(forceName, force) => {
-              if (forceName === 'charge') {
-                force.strength(graphSettings.chargeStrength);
-              }
-              if (forceName === 'link') {
-                force.distance(graphSettings.linkDistance);
-              }
-              if (forceName === 'collide') {
-                force.radius(graphSettings.collideRadius);
-              }
-            }}
-            enableNodeDrag={true}
-            enableZoomInteraction={true}
-            enablePanInteraction={true}
-            onNodeClick={(node) => {
-              // Center view on node when clicked
-              if (graphRef.current) {
-                graphRef.current.centerAt(node.x, node.y, 1000);
-                graphRef.current.zoom(1.5, 1000);
-              }
+      <div ref={graphContainerRef} className="flex-1 bg-slate-900 relative overflow-hidden">
+        {graphDimensions.width <= 0 || graphDimensions.height <= 0 ? (
+          <div className="w-full h-full flex justify-center items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : (
+          <CanvasGraph
+            data={graphData}
+            width={graphDimensions.width}
+            height={graphDimensions.height}
+            zoomLevel={zoomLevel}
+            onNodeClick={handleNodeClick}
+            onNodeDrag={(nodeId, x, y) => {
+              updatePersonPosition(nodeId, { x, y });
             }}
           />
+        )}
+
+        {/* Empty state overlay */}
+        {people.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+            <div className="text-center max-w-md p-6">
+              <div className="inline-flex items-center justify-center p-4 bg-indigo-600/30 rounded-full mb-4">
+                <FaUserPlus className="text-3xl text-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Start Building Your Network</h2>
+              <p className="text-slate-300 mb-6">
+                Add people and create relationships between them to visualize your network
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => setPersonModalOpen(true)}
+                icon={<FaUserPlus />}
+                size="lg"
+              >
+                Add Your First Person
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Interaction hint */}
+        {people.length > 0 && interactionHint && (
+          <div
+            className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-indigo-900/90 
+          text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center space-x-2 animate-pulse"
+          >
+            <FaInfo className="text-indigo-400" />
+            <span>Click on a person to see details, drag to reposition</span>
+            <button
+              className="ml-2 text-indigo-400 hover:text-white"
+              onClick={() => setInteractionHint(false)}
+            >
+              <FaTimes />
+            </button>
+          </div>
+        )}
+
+        {/* Graph controls */}
+        <div className="absolute bottom-6 right-6 flex flex-col space-y-3">
+          <Tooltip text="Zoom In (shortcut: +)">
+            <button
+              className="bg-slate-800 hover:bg-indigo-600 text-white p-3 rounded-full shadow-lg transition-colors"
+              onClick={handleZoomIn}
+              aria-label="Zoom In"
+            >
+              <FaSearchPlus />
+            </button>
+          </Tooltip>
+          <Tooltip text="Zoom Out (shortcut: -)">
+            <button
+              className="bg-slate-800 hover:bg-indigo-600 text-white p-3 rounded-full shadow-lg transition-colors"
+              onClick={handleZoomOut}
+              aria-label="Zoom Out"
+            >
+              <FaSearchMinus />
+            </button>
+          </Tooltip>
+          <Tooltip text="Reset View (shortcut: 0)">
+            <button
+              className="bg-slate-800 hover:bg-indigo-600 text-white p-3 rounded-full shadow-lg transition-colors"
+              onClick={handleResetZoom}
+              aria-label="Reset View"
+            >
+              <FaCompress />
+            </button>
+          </Tooltip>
+          <Tooltip text="Refresh Network">
+            <button
+              className="bg-slate-800 hover:bg-indigo-600 text-white p-3 rounded-full shadow-lg transition-colors"
+              onClick={handleRefreshNetwork}
+              aria-label="Refresh Network"
+            >
+              <FaRedo />
+            </button>
+          </Tooltip>
         </div>
 
-        {/* Graph Controls */}
-        <div className="absolute bottom-5 right-5 flex flex-col space-y-2">
-          <button 
-            onClick={zoomIn}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-colors"
-            title="Zoom In"
-          >
-            <FaSearchPlus />
-          </button>
-          <button 
-            onClick={zoomOut}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-colors"
-            title="Zoom Out"
-          >
-            <FaSearchMinus />
-          </button>
-          <button 
-            onClick={centerGraph}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-colors"
-            title="Center Graph"
-          >
-            <FaCompress />
-          </button>
-          <button 
-            onClick={refreshGraph}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-colors"
-            title="Refresh Data"
-          >
-            <FaRedo />
-          </button>
-        </div>
-
-        {/* Mobile Controls */}
-        <div className="absolute top-5 right-5 lg:hidden">
-          <button 
-            onClick={centerGraph}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg mr-2"
-            title="Center Graph"
-          >
-            <FaCompress />
-          </button>
+        {/* Quick action buttons */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+          <Tooltip text="Add Person (shortcut: n)">
+            <button
+              onClick={() => setPersonModalOpen(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition-colors"
+              aria-label="Add Person"
+            >
+              <FaUserPlus />
+            </button>
+          </Tooltip>
+          <Tooltip text="Add Relationship (shortcut: r)">
+            <button
+              onClick={() => setRelationshipModalOpen(true)}
+              className="bg-pink-600 hover:bg-pink-700 text-white p-3 rounded-full shadow-lg transition-colors"
+              aria-label="Add Relationship"
+            >
+              <FaUserFriends />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
-      {/* Override Confirmation Modal */}
-      <AnimatePresence>
-        {showOverrideModal && overrideRelationship && (
-          <motion.div 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }} 
-              animate={{ scale: 1, y: 0 }} 
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-slate-800 rounded-lg p-6 max-w-md w-full shadow-2xl border border-slate-700"
+      {/* Add Person Modal */}
+      <Modal
+        isOpen={personModalOpen}
+        onClose={() => {
+          setPersonModalOpen(false);
+          setPersonFormErrors({});
+        }}
+        title="Add New Person"
+      >
+        <form onSubmit={handlePersonSubmit} className="space-y-4">
+          {personFormErrors.general && (
+            <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
+              {personFormErrors.general}
+            </div>
+          )}
+
+          <FormField label="First Name" id="firstName" required error={personFormErrors.firstName}>
+            <input
+              id="firstName"
+              type="text"
+              className={`w-full bg-slate-700 border ${personFormErrors.firstName ? 'border-red-500' : 'border-slate-600'} 
+              rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+              placeholder="Enter first name"
+              value={newPerson.firstName}
+              onChange={e => setNewPerson({ ...newPerson, firstName: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Last Name" id="lastName" required error={personFormErrors.lastName}>
+            <input
+              id="lastName"
+              type="text"
+              className={`w-full bg-slate-700 border ${personFormErrors.lastName ? 'border-red-500' : 'border-slate-600'} 
+              rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+              placeholder="Enter last name"
+              value={newPerson.lastName}
+              onChange={e => setNewPerson({ ...newPerson, lastName: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Birthday (Optional)" id="birthday">
+            <div className="relative">
+              <DatePicker
+                id="birthday"
+                selected={newPerson.birthday}
+                onChange={date => setNewPerson({ ...newPerson, birthday: date })}
+                dateFormat="MMMM d, yyyy"
+                placeholderText="Select birthday"
+                className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                showYearDropdown
+                dropdownMode="select"
+                wrapperClassName="w-full"
+              />
+              <FaRegCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            </div>
+          </FormField>
+
+          <FormField label="Notes (Optional)" id="notes">
+            <textarea
+              id="notes"
+              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 min-h-[80px]
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+              placeholder="Add any additional information"
+              value={newPerson.notes}
+              onChange={e => setNewPerson({ ...newPerson, notes: e.target.value })}
+            />
+          </FormField>
+
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setPersonModalOpen(false);
+                setPersonFormErrors({});
+              }}
             >
-              <h3 className="text-xl font-bold mb-4 text-indigo-300">Existing Relationship(s)</h3>
-              <p className="mb-4 text-slate-300">
-                {overrideRelationship.existingRelationships.length === 1
-                  ? 'There is already a relationship between these people:'
-                  : 'There are already relationships between these people:'}
-              </p>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" icon={<FaUserPlus />}>
+              Add Person
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
-              <div className="mb-4 max-h-64 overflow-y-auto">
-                <ul className="divide-y divide-slate-700 border border-slate-700 rounded-lg">
-                  {overrideRelationship.existingRelationships.map((rel: any, index: number) => {
-                    const source = people.find(n => n.id === rel.source);
-                    const target = people.find(n => n.id === rel.target);
-                    if (!source || !target) return null;
+      {/* Add Relationship Modal */}
+      <Modal
+        isOpen={relationshipModalOpen}
+        onClose={() => {
+          setRelationshipModalOpen(false);
+          setRelationshipFormErrors({});
+        }}
+        title="Add New Relationship"
+      >
+        <form onSubmit={handleRelationshipSubmit} className="space-y-4">
+          {relationshipFormErrors.general && (
+            <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
+              {relationshipFormErrors.general}
+            </div>
+          )}
 
-                    return (
-                      <li key={index} className="p-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-300">
-                            {source.firstName} {source.lastName.charAt(0)}. ↔ {target.firstName}{' '}
-                            {target.lastName.charAt(0)}.
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs mt-2">
-                          <span className="text-slate-400">
-                            Current: {getRelationshipLabel(rel.existingType)}
-                          </span>
-                          <span className="text-indigo-400">
-                            New: {getRelationshipLabel(rel.newType)}
-                          </span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+          <FormField
+            label="Source Person"
+            id="source"
+            required
+            error={relationshipFormErrors.source}
+          >
+            <select
+              id="source"
+              className={`w-full bg-slate-700 border ${relationshipFormErrors.source ? 'border-red-500' : 'border-slate-600'} 
+              rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+              value={newRelationship.source}
+              onChange={e => setNewRelationship({ ...newRelationship, source: e.target.value })}
+            >
+              <option value="">Select person</option>
+              {sortedPeople.map(person => (
+                <option key={`source-${person._id}`} value={person._id}>
+                  {person.firstName} {person.lastName}
+                </option>
+              ))}
+            </select>
+          </FormField>
 
-              <p className="mb-6 text-slate-300">Do you want to override the existing relationship(s)?</p>
+          <FormField
+            label="Target Person"
+            id="target"
+            required
+            error={relationshipFormErrors.target}
+          >
+            <select
+              id="target"
+              className={`w-full bg-slate-700 border ${relationshipFormErrors.target ? 'border-red-500' : 'border-slate-600'} 
+              rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+              value={newRelationship.target}
+              onChange={e => setNewRelationship({ ...newRelationship, target: e.target.value })}
+            >
+              <option value="">Select person</option>
+              {sortedPeople.map(person => (
+                <option key={`target-${person._id}`} value={person._id}>
+                  {person.firstName} {person.lastName}
+                </option>
+              ))}
+            </select>
+          </FormField>
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
-                  onClick={handleCancelOverride}
+          <FormField label="Relationship Type" id="type" required>
+            <select
+              id="type"
+              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+              value={newRelationship.type}
+              onChange={e =>
+                setNewRelationship({
+                  ...newRelationship,
+                  type: e.target.value as RelationshipType,
+                })
+              }
+            >
+              {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          {newRelationship.type === 'custom' && (
+            <FormField
+              label="Custom Type"
+              id="customType"
+              required
+              error={relationshipFormErrors.customType}
+            >
+              <input
+                id="customType"
+                type="text"
+                className={`w-full bg-slate-700 border ${relationshipFormErrors.customType ? 'border-red-500' : 'border-slate-600'} 
+                rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+                placeholder="Enter custom relationship type"
+                value={newRelationship.customType}
+                onChange={e =>
+                  setNewRelationship({
+                    ...newRelationship,
+                    customType: e.target.value,
+                  })
+                }
+              />
+            </FormField>
+          )}
+
+          <FormField label="Notes (Optional)" id="relationNotes">
+            <textarea
+              id="relationNotes"
+              className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 min-h-[60px]
+              focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+              placeholder="Add any additional information"
+              value={newRelationship.notes}
+              onChange={e => setNewRelationship({ ...newRelationship, notes: e.target.value })}
+            />
+          </FormField>
+
+          <div className="flex items-center mt-2">
+            <input
+              type="checkbox"
+              id="bidirectional"
+              className="h-4 w-4 rounded border-gray-500 text-indigo-600 focus:ring-indigo-500 bg-slate-700"
+              checked={newRelationship.bidirectional}
+              onChange={e =>
+                setNewRelationship({
+                  ...newRelationship,
+                  bidirectional: e.target.checked,
+                })
+              }
+            />
+            <label htmlFor="bidirectional" className="ml-2 block text-sm text-gray-300">
+              Create bidirectional relationship (recommended)
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setRelationshipModalOpen(false);
+                setRelationshipFormErrors({});
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" icon={<FaUserFriends />}>
+              Add Relationship
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Person Detail Modal */}
+      {editPerson && (
+        <Modal
+          isOpen={personDetailModalOpen}
+          onClose={() => {
+            setPersonDetailModalOpen(false);
+            setEditPerson(null);
+            setPersonFormErrors({});
+          }}
+          title={`${editPerson.firstName} ${editPerson.lastName}`}
+        >
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <form onSubmit={handleUpdatePerson} className="space-y-4">
+                {personFormErrors.general && (
+                  <div className="bg-red-500/20 border border-red-500 text-white p-3 rounded-lg text-sm mb-4">
+                    {personFormErrors.general}
+                  </div>
+                )}
+
+                <FormField
+                  label="First Name"
+                  id="editFirstName"
+                  required
+                  error={personFormErrors.firstName}
                 >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
-                  onClick={handleConfirmOverride}
+                  <input
+                    id="editFirstName"
+                    type="text"
+                    className={`w-full bg-slate-700 border ${personFormErrors.firstName ? 'border-red-500' : 'border-slate-600'} 
+                    rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+                    value={editPerson.firstName || ''}
+                    onChange={e => setEditPerson({ ...editPerson, firstName: e.target.value })}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Last Name"
+                  id="editLastName"
+                  required
+                  error={personFormErrors.lastName}
                 >
-                  Override
-                </button>
+                  <input
+                    id="editLastName"
+                    type="text"
+                    className={`w-full bg-slate-700 border ${personFormErrors.lastName ? 'border-red-500' : 'border-slate-600'} 
+                    rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white`}
+                    value={editPerson.lastName || ''}
+                    onChange={e => setEditPerson({ ...editPerson, lastName: e.target.value })}
+                  />
+                </FormField>
+
+                <FormField label="Birthday" id="editBirthday">
+                  <div className="relative">
+                    <DatePicker
+                      id="editBirthday"
+                      selected={editPerson.birthday ? new Date(editPerson.birthday) : null}
+                      onChange={date => setEditPerson({ ...editPerson, birthday: date })}
+                      dateFormat="MMMM d, yyyy"
+                      placeholderText="Select birthday"
+                      className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
+                      focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                      showYearDropdown
+                      dropdownMode="select"
+                      wrapperClassName="w-full"
+                    />
+                    <FaRegCalendarAlt className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                  </div>
+                </FormField>
+
+                <FormField label="Notes" id="editNotes">
+                  <textarea
+                    id="editNotes"
+                    className="w-full bg-slate-700 border border-slate-600 rounded-md p-2 min-h-[80px]
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                    value={editPerson.notes || ''}
+                    onChange={e => setEditPerson({ ...editPerson, notes: e.target.value })}
+                  />
+                </FormField>
+
+                <div className="flex justify-between pt-2">
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      confirmDelete('person', editPerson._id);
+                      setPersonDetailModalOpen(false);
+                    }}
+                    icon={<FaTrash />}
+                  >
+                    Delete
+                  </Button>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setPersonDetailModalOpen(false);
+                        setEditPerson(null);
+                        setPersonFormErrors({});
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" variant="primary" icon={<FaSave />}>
+                      Save Changes
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <div>
+              <h4 className="font-medium text-indigo-400 mb-2">Connections</h4>
+              <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-900 rounded-lg p-2">
+                {relationships.filter(
+                  r => r.source === editPerson._id || r.target === editPerson._id
+                ).length > 0 ? (
+                  relationships
+                    .filter(r => r.source === editPerson._id || r.target === editPerson._id)
+                    .map(rel => {
+                      const isSource = rel.source === editPerson._id;
+                      const otherPersonId = isSource ? rel.target : rel.source;
+                      const otherPerson = people.find(p => p._id === otherPersonId);
+
+                      if (!otherPerson) return null;
+
+                      return (
+                        <div
+                          key={rel._id}
+                          className="flex justify-between items-center py-1 px-2 hover:bg-slate-800 rounded"
+                        >
+                          <div className="flex items-center">
+                            <span
+                              className="inline-block w-2 h-2 rounded-full mr-2"
+                              style={{ backgroundColor: RELATIONSHIP_COLORS[rel.type] }}
+                            ></span>
+                            <span className="text-sm">
+                              {isSource ? 'To: ' : 'From: '}
+                              <span
+                                className="font-medium hover:text-indigo-400 cursor-pointer"
+                                onClick={() => {
+                                  setSelectedPersonId(otherPersonId);
+                                  setPersonDetailModalOpen(false);
+                                  setTimeout(() => {
+                                    const targetPerson = people.find(p => p._id === otherPersonId);
+                                    if (targetPerson) openPersonDetail(targetPerson);
+                                  }, 100);
+                                }}
+                              >
+                                {otherPerson.firstName} {otherPerson.lastName}
+                              </span>
+                              {rel.type === 'custom'
+                                ? ` (${rel.customType})`
+                                : ` (${RELATIONSHIP_LABELS[rel.type]})`}
+                            </span>
+                          </div>
+                          <button
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                            onClick={() => deleteRelationship(rel._id)}
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                ) : (
+                  <div className="text-center py-2 text-slate-400 text-sm">No connections yet</div>
+                )}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="mt-3 flex justify-center">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setNewRelationship({
+                      ...newRelationship,
+                      source: editPerson._id,
+                    });
+                    setPersonDetailModalOpen(false);
+                    setTimeout(() => setRelationshipModalOpen(true), 100);
+                  }}
+                  icon={<FaPlus />}
+                >
+                  Add New Connection
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Settings Modal */}
+      <Modal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        title="Network Settings"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">Show Labels</label>
+            <div className="relative inline-block w-12 align-middle select-none">
+              <input
+                type="checkbox"
+                id="showLabels"
+                name="showLabels"
+                className="sr-only"
+                checked={settings.showLabels}
+                onChange={() => setSettings({ ...settings, showLabels: !settings.showLabels })}
+              />
+              <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
+              <div
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
+                  settings.showLabels ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'
+                }`}
+              ></div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">Auto Layout</label>
+            <div className="relative inline-block w-12 align-middle select-none">
+              <input
+                type="checkbox"
+                id="autoLayout"
+                name="autoLayout"
+                className="sr-only"
+                checked={settings.autoLayout}
+                onChange={() => setSettings({ ...settings, autoLayout: !settings.autoLayout })}
+              />
+              <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
+              <div
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
+                  settings.autoLayout ? 'transform translate-x-6 bg-indigo-500' : 'bg-gray-400'
+                }`}
+              ></div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-300">Highlight Connections</label>
+            <div className="relative inline-block w-12 align-middle select-none">
+              <input
+                type="checkbox"
+                id="highlightConnections"
+                name="highlightConnections"
+                className="sr-only"
+                checked={settings.highlightConnections}
+                onChange={() =>
+                  setSettings({ ...settings, highlightConnections: !settings.highlightConnections })
+                }
+              />
+              <div className="block h-6 bg-slate-700 rounded-full w-12"></div>
+              <div
+                className={`absolute left-1 top-1 w-4 h-4 rounded-full transition-transform ${
+                  settings.highlightConnections
+                    ? 'transform translate-x-6 bg-indigo-500'
+                    : 'bg-gray-400'
+                }`}
+              ></div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Animation Speed</label>
+            <div className="flex space-x-2">
+              {['slow', 'medium', 'fast'].map(speed => (
+                <button
+                  key={speed}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm ${
+                    settings.animationSpeed === speed
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                  }`}
+                  onClick={() => setSettings({ ...settings, animationSpeed: speed })}
+                >
+                  {speed.charAt(0).toUpperCase() + speed.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Node Size</label>
+            <div className="flex space-x-2">
+              {['small', 'medium', 'large'].map(size => (
+                <button
+                  key={size}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm ${
+                    settings.nodeSize === size
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                  }`}
+                  onClick={() => setSettings({ ...settings, nodeSize: size })}
+                >
+                  {size.charAt(0).toUpperCase() + size.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end">
+            <Button variant="primary" onClick={() => setSettingsModalOpen(false)} icon={<FaSave />}>
+              Save Settings
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Help Modal */}
+      <Modal
+        isOpen={helpModalOpen}
+        onClose={() => setHelpModalOpen(false)}
+        title="Keyboard Shortcuts & Help"
+        size="lg"
+      >
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-md font-semibold text-indigo-400 mb-2">Keyboard Shortcuts</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  n
+                </span>
+                Add new person
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  r
+                </span>
+                Add new relationship
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  s
+                </span>
+                Toggle sidebar
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  +
+                </span>
+                Zoom in
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  -
+                </span>
+                Zoom out
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  0
+                </span>
+                Reset zoom
+              </div>
+              <div className="bg-slate-900 p-2 rounded">
+                <span className="inline-block bg-slate-700 px-2 py-1 rounded mr-2 text-xs font-mono">
+                  Ctrl+/
+                </span>
+                Show this help
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-md font-semibold text-indigo-400 mb-2">Tips & Tricks</h3>
+            <ul className="space-y-2 text-sm text-slate-300">
+              <li className="flex items-start">
+                <span className="text-indigo-400 mr-2">•</span>
+                <span>
+                  Click on a person in the graph to see their details and edit their information
+                </span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-indigo-400 mr-2">•</span>
+                <span>Drag people around in the graph to organize your network visually</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-indigo-400 mr-2">•</span>
+                <span>
+                  Use the sidebar to filter and manage your network's people and relationships
+                </span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-indigo-400 mr-2">•</span>
+                <span>
+                  Create bidirectional relationships to show mutual connections (recommended)
+                </span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-indigo-400 mr-2">•</span>
+                <span>Customize the appearance and behavior in Settings</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="text-center pt-2">
+            <Button variant="primary" onClick={() => setHelpModalOpen(false)} icon={<FaStar />}>
+              Got it
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={executeDelete}
+        title="Confirm Deletion"
+        message={
+          itemToDelete.type === 'person'
+            ? 'Are you sure you want to delete this person? This will also remove all their relationships.'
+            : 'Are you sure you want to delete this relationship?'
+        }
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 z-[9900] space-y-2 pointer-events-none">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type as any}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 };
