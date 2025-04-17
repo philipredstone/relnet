@@ -1,24 +1,10 @@
 import React from 'react';
 import DatePicker from 'react-datepicker';
-import {
-  FaPlus,
-  FaRegCalendarAlt,
-  FaSave,
-  FaStar,
-  FaTrash,
-  FaUserFriends,
-  FaUserPlus,
-} from 'react-icons/fa';
+import { FaPlus, FaRegCalendarAlt, FaSave, FaStar, FaTrash, FaUserFriends, FaUserPlus } from 'react-icons/fa';
 
 import { Button, FormField, Modal } from '../components/FriendshipNetworkComponents';
 
-import {
-  PersonNode,
-  RelationshipEdge,
-  FormErrors,
-  NewPersonForm,
-  NewRelationshipForm,
-} from '../types/network';
+import { FormErrors, NewPersonForm, NewRelationshipForm, PersonNode, RelationshipEdge } from '../types/network';
 
 import {
   getRelationshipColor,
@@ -26,13 +12,7 @@ import {
   RELATIONSHIP_TYPES,
   RELATIONSHIPS,
 } from '../types/RelationShipTypes';
-import {
-  ErrorMessage,
-  KeyboardShortcut,
-  OptionGroup,
-  TipItem,
-  ToggleSetting,
-} from './UIComponents';
+import { ErrorMessage, KeyboardShortcut, OptionGroup, TipItem, ToggleSetting } from './UIComponents';
 
 // ==============================
 // Person Form Modal
@@ -48,14 +28,14 @@ interface PersonFormModalProps {
 }
 
 export const PersonFormModal: React.FC<PersonFormModalProps> = ({
-  isOpen,
-  onClose,
-  formData,
-  setFormData,
-  errors,
-  onSubmit,
-  isEdit = false,
-}) => {
+                                                                  isOpen,
+                                                                  onClose,
+                                                                  formData,
+                                                                  setFormData,
+                                                                  errors,
+                                                                  onSubmit,
+                                                                  isEdit = false,
+                                                                }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Person' : 'Add New Person'}>
       <form onSubmit={onSubmit} className="space-y-4">
@@ -141,14 +121,14 @@ interface RelationshipFormModalProps {
 }
 
 export const RelationshipFormModal: React.FC<RelationshipFormModalProps> = ({
-  isOpen,
-  onClose,
-  formData,
-  setFormData,
-  errors,
-  onSubmit,
-  people,
-}) => {
+                                                                              isOpen,
+                                                                              onClose,
+                                                                              formData,
+                                                                              setFormData,
+                                                                              errors,
+                                                                              onSubmit,
+                                                                              people,
+                                                                            }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add New Relationship">
       <form onSubmit={onSubmit} className="space-y-4">
@@ -289,19 +269,19 @@ interface PersonDetailModalProps {
 }
 
 export const PersonDetailModal: React.FC<PersonDetailModalProps> = ({
-  isOpen,
-  onClose,
-  person,
-  setPerson,
-  errors,
-  onSubmit,
-  onDelete,
-  relationships,
-  people,
-  onDeleteRelationship,
-  onAddNewConnection,
-  onNavigateToPerson,
-}) => {
+                                                                      isOpen,
+                                                                      onClose,
+                                                                      person,
+                                                                      setPerson,
+                                                                      errors,
+                                                                      onSubmit,
+                                                                      onDelete,
+                                                                      relationships,
+                                                                      people,
+                                                                      onDeleteRelationship,
+                                                                      onAddNewConnection,
+                                                                      onNavigateToPerson,
+                                                                    }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`${person.firstName} ${person.lastName}`}>
       <div className="space-y-6">
@@ -380,7 +360,7 @@ export const PersonDetailModal: React.FC<PersonDetailModalProps> = ({
           <h4 className="font-medium text-indigo-400 mb-2">Connections</h4>
           <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-900 rounded-lg p-2">
             {relationships.filter(
-              (r: RelationshipEdge) => r.source === person._id || r.target === person._id
+              (r: RelationshipEdge) => r.source === person._id || r.target === person._id,
             ).length > 0 ? (
               relationships
                 .filter((r: RelationshipEdge) => r.source === person._id || r.target === person._id)
@@ -465,11 +445,11 @@ interface SettingsModalProps {
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen,
-  onClose,
-  settings,
-  setSettings,
-}) => {
+                                                              isOpen,
+                                                              onClose,
+                                                              settings,
+                                                              setSettings,
+                                                            }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Network Settings">
       <div className="space-y-4">
