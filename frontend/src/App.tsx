@@ -28,13 +28,14 @@ const App: React.FC = () => {
     <AuthProvider>
       <NetworkProvider>
         <Router>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow">
+          <div className="flex flex-col h-screen">
+            <header className="header-height">
+              <Header />
+            </header>
+            <main className="flex-1 overflow-hidden">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-
                 <Route
                   path="/networks"
                   element={
@@ -43,16 +44,16 @@ const App: React.FC = () => {
                     </ProtectedRoute>
                   }
                 />
-
                 <Route
                   path="/networks/:id"
                   element={
                     <ProtectedRoute>
-                      <FriendshipNetwork />
+                      <div className="h-full">
+                        <FriendshipNetwork />
+                      </div>
                     </ProtectedRoute>
                   }
                 />
-
                 <Route path="/" element={<Navigate to="/networks" />} />
                 <Route path="*" element={<Navigate to="/networks" />} />
               </Routes>

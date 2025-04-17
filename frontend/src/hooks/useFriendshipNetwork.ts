@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { addPerson, getPeople, Person, removePerson, updatePerson } from '../api/people';
-import { addRelationship, getRelationships, removeRelationship, updateRelationship } from '../api/relationships';
+import {
+  addRelationship,
+  getRelationships,
+  removeRelationship,
+  updateRelationship,
+} from '../api/relationships';
 import { Relationship } from '../interfaces/IRelationship';
 import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
 
@@ -20,7 +25,7 @@ const DEFAULT_POLL_INTERVAL = 5000;
 // Custom hook to manage friendship network data
 export const useFriendshipNetwork = (
   networkId: string | null,
-  pollInterval = DEFAULT_POLL_INTERVAL,
+  pollInterval = DEFAULT_POLL_INTERVAL
 ) => {
   const [people, setPeople] = useState<PersonNode[]>([]);
   const [relationships, setRelationships] = useState<RelationshipEdge[]>([]);
@@ -66,7 +71,7 @@ export const useFriendshipNetwork = (
         // Generate hashes to detect changes
         const positionsHash = JSON.stringify(peopleNodes.map(p => ({ id: p.id, pos: p.position })));
         const relationshipsHash = JSON.stringify(
-          relationshipEdges.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type })),
+          relationshipEdges.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type }))
         );
 
         // Handle people updates
@@ -183,7 +188,7 @@ export const useFriendshipNetwork = (
         }
       }
     },
-    [networkId],
+    [networkId]
   );
 
   // Set up polling for network data
@@ -230,7 +235,7 @@ export const useFriendshipNetwork = (
 
       // Update the reference hash to avoid unnecessary state updates on next poll
       lastPeopleUpdateRef.current = JSON.stringify(
-        updatedPeople.map(p => ({ id: p.id, pos: p.position })),
+        updatedPeople.map(p => ({ id: p.id, pos: p.position }))
       );
 
       return newPersonNode;
@@ -248,7 +253,7 @@ export const useFriendshipNetwork = (
       lastName?: string;
       birthday?: string | null;
       position?: { x: number; y: number };
-    },
+    }
   ): Promise<PersonNode> => {
     if (!networkId) throw new Error('No network selected');
 
@@ -258,14 +263,14 @@ export const useFriendshipNetwork = (
 
       // Update the local state
       const updatedPeople = people.map(person =>
-        person._id === personId ? updatedPersonNode : person,
+        person._id === personId ? updatedPersonNode : person
       );
       setPeople(updatedPeople);
 
       // Update the reference hash if position changed to avoid unnecessary state updates on next poll
       if (personData.position) {
         lastPeopleUpdateRef.current = JSON.stringify(
-          updatedPeople.map(p => ({ id: p.id, pos: p.position })),
+          updatedPeople.map(p => ({ id: p.id, pos: p.position }))
         );
       }
 
@@ -289,16 +294,16 @@ export const useFriendshipNetwork = (
 
       // Remove all relationships involving this person
       const updatedRelationships = relationships.filter(
-        rel => rel.source !== personId && rel.target !== personId,
+        rel => rel.source !== personId && rel.target !== personId
       );
       setRelationships(updatedRelationships);
 
       // Update both reference hashes to avoid unnecessary state updates on next poll
       lastPeopleUpdateRef.current = JSON.stringify(
-        updatedPeople.map(p => ({ id: p.id, pos: p.position })),
+        updatedPeople.map(p => ({ id: p.id, pos: p.position }))
       );
       lastRelationshipsUpdateRef.current = JSON.stringify(
-        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type })),
+        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type }))
       );
     } catch (err: any) {
       setError(err.message || 'Failed to delete person');
@@ -324,7 +329,7 @@ export const useFriendshipNetwork = (
 
       // Update the relationship hash to avoid unnecessary state updates on next poll
       lastRelationshipsUpdateRef.current = JSON.stringify(
-        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type })),
+        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type }))
       );
 
       return newRelationshipEdge;
@@ -340,7 +345,7 @@ export const useFriendshipNetwork = (
     relationshipData: {
       type?: RELATIONSHIP_TYPES;
       customType?: string;
-    },
+    }
   ): Promise<RelationshipEdge> => {
     if (!networkId) throw new Error('No network selected');
 
@@ -348,7 +353,7 @@ export const useFriendshipNetwork = (
       const updatedRelationship = await updateRelationship(
         networkId,
         relationshipId,
-        relationshipData,
+        relationshipData
       );
       const updatedRelationshipEdge: RelationshipEdge = {
         ...updatedRelationship,
@@ -356,13 +361,13 @@ export const useFriendshipNetwork = (
       };
 
       const updatedRelationships = relationships.map(rel =>
-        rel._id === relationshipId ? updatedRelationshipEdge : rel,
+        rel._id === relationshipId ? updatedRelationshipEdge : rel
       );
       setRelationships(updatedRelationships);
 
       // Update the relationship hash to avoid unnecessary state updates on next poll
       lastRelationshipsUpdateRef.current = JSON.stringify(
-        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type })),
+        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type }))
       );
 
       return updatedRelationshipEdge;
@@ -383,7 +388,7 @@ export const useFriendshipNetwork = (
 
       // Update the relationship hash to avoid unnecessary state updates on next poll
       lastRelationshipsUpdateRef.current = JSON.stringify(
-        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type })),
+        updatedRelationships.map(r => ({ id: r.id, src: r.source, tgt: r.target, type: r.type }))
       );
     } catch (err: any) {
       setError(err.message || 'Failed to delete relationship');

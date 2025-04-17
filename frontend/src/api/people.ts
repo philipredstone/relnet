@@ -44,7 +44,7 @@ export interface UpdatePersonData {
 // Get all people in a network
 export const getPeople = async (networkId: string): Promise<Person[]> => {
   const response = await axios.get<{ success: boolean; data: Person[] }>(
-    `${API_URL}/networks/${networkId}/people`,
+    `${API_URL}/networks/${networkId}/people`
   );
   return response.data.data;
 };
@@ -53,7 +53,7 @@ export const getPeople = async (networkId: string): Promise<Person[]> => {
 export const addPerson = async (networkId: string, data: CreatePersonData): Promise<Person> => {
   const response = await axios.post<{ success: boolean; data: Person }>(
     `${API_URL}/networks/${networkId}/people`,
-    data,
+    data
   );
   return response.data.data;
 };
@@ -62,11 +62,11 @@ export const addPerson = async (networkId: string, data: CreatePersonData): Prom
 export const updatePerson = async (
   networkId: string,
   personId: string,
-  data: UpdatePersonData,
+  data: UpdatePersonData
 ): Promise<Person> => {
   const response = await axios.put<{ success: boolean; data: Person }>(
     `${API_URL}/networks/${networkId}/people/${personId}`,
-    data,
+    data
   );
   return response.data.data;
 };

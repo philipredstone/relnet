@@ -5,7 +5,8 @@ export interface PersonNode {
   birthday?: Date | string | null;
   notes?: string;
   position?: {
-    x: number; y: number;
+    x: number;
+    y: number;
   };
 }
 

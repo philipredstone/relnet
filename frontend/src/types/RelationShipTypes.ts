@@ -1,4 +1,13 @@
-export type RELATIONSHIP_TYPES = 'acquaintance' | 'friend' | 'partner' | 'family' | 'secondDegree' | 'colleague' | 'teacher' | 'exPartner' | 'custom';
+export type RELATIONSHIP_TYPES =
+  | 'acquaintance'
+  | 'friend'
+  | 'partner'
+  | 'family'
+  | 'secondDegree'
+  | 'colleague'
+  | 'teacher'
+  | 'exPartner'
+  | 'custom';
 
 export const RELATIONSHIPS: Record<RELATIONSHIP_TYPES, { label: string; color: string }> = {
   acquaintance: { label: 'Bekannter', color: '#60A5FA' }, // Light blue

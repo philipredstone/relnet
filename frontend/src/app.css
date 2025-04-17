@@ -1,1 +1,9 @@
 @import 'tailwindcss';
+
+.header-height {
+  height: 64px;
+}
+
+.h-full-important {
+  height: 100% !important;
+}

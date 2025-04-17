@@ -48,11 +48,11 @@ export interface NetworkStatsProps {
 
 // Enhanced Tooltip with animation and positioning
 export const Tooltip: React.FC<TooltipProps> = ({
-                                                  children,
-                                                  text,
-                                                  position = 'top',
-                                                  delay = 300,
-                                                }) => {
+  children,
+  text,
+  position = 'top',
+  delay = 300,
+}) => {
   const [show, setShow] = useState(false);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
@@ -218,15 +218,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
 // Enhanced Confirmation dialog
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
-                                                              isOpen,
-                                                              onClose,
-                                                              onConfirm,
-                                                              title,
-                                                              message,
-                                                              confirmText = 'Confirm',
-                                                              cancelText = 'Cancel',
-                                                              variant = 'danger',
-                                                            }) => {
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  variant = 'danger',
+}) => {
   const variantClasses = {
     danger: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
     warning: 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500',
@@ -274,7 +274,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ people, relationship
     people.length > 0 ? (relationships.length / people.length).toFixed(1) : '0.0';
 
   const isolatedPeople = people.filter(
-    person => !relationships.some(r => r.source === person._id || r.target === person._id),
+    person => !relationships.some(r => r.source === person._id || r.target === person._id)
   ).length;
 
   // Find most connected person
@@ -286,8 +286,8 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ people, relationship
   const mostConnected =
     personConnectionCounts.length > 0
       ? personConnectionCounts.reduce((prev, current) =>
-        prev.count > current.count ? prev : current,
-      )
+          prev.count > current.count ? prev : current
+        )
       : null;
 
   return (
@@ -351,12 +351,12 @@ export const NetworkStats: React.FC<NetworkStatsProps> = ({ people, relationship
 
 // Enhanced Toast notification component
 export const Toast: React.FC<ToastProps> = ({
-                                              message,
-                                              type,
-                                              onClose,
-                                              autoClose = true,
-                                              duration = 3000,
-                                            }) => {
+  message,
+  type,
+  onClose,
+  autoClose = true,
+  duration = 3000,
+}) => {
   useEffect(() => {
     if (autoClose) {
       const timer = setTimeout(() => {
@@ -423,16 +423,16 @@ export interface ButtonProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({
-                                                children,
-                                                onClick,
-                                                type = 'button',
-                                                variant = 'primary',
-                                                size = 'md',
-                                                icon,
-                                                className = '',
-                                                disabled = false,
-                                                fullWidth = false,
-                                              }) => {
+  children,
+  onClick,
+  type = 'button',
+  variant = 'primary',
+  size = 'md',
+  icon,
+  className = '',
+  disabled = false,
+  fullWidth = false,
+}) => {
   const variantClasses = {
     primary: 'bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500',
     secondary: 'bg-slate-700 hover:bg-slate-600 text-white focus:ring-slate-500',
@@ -481,14 +481,14 @@ export interface FormFieldProps {
 }
 
 export const FormField: React.FC<FormFieldProps> = ({
-                                                      label,
-                                                      id,
-                                                      error,
-                                                      required = false,
-                                                      className = '',
-                                                      children,
-                                                      labelClassName = '',
-                                                    }) => {
+  label,
+  id,
+  error,
+  required = false,
+  className = '',
+  children,
+  labelClassName = '',
+}) => {
   return (
     <div className={`mb-4 ${className}`}>
       <label
