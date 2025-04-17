@@ -91,7 +91,7 @@ export const PersonFormModal: React.FC<PersonFormModalProps> = ({
               id="birthday"
               selected={formData.birthday}
               onChange={(date: Date | null) => setFormData({ ...formData, birthday: date })}
-              dateFormat="MMMM d, yyyy"
+              dateFormat="dd.MM.YYYY"
               placeholderText="Select birthday"
               className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
               focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
@@ -337,7 +337,7 @@ export const PersonDetailModal: React.FC<PersonDetailModalProps> = ({
                   id="editBirthday"
                   selected={person.birthday ? new Date(person.birthday) : null}
                   onChange={(date: Date | null) => setPerson({ ...person, birthday: date })}
-                  dateFormat="MMMM d, yyyy"
+                  dateFormat="dd.MM.YYYY"
                   placeholderText="Select birthday"
                   className="w-full bg-slate-700 border border-slate-600 rounded-md p-2
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
