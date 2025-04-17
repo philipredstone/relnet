@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { addPerson, getPeople, Person, removePerson, updatePerson } from '../api/people';
-import {
-  addRelationship,
-  getRelationships,
-  removeRelationship,
-  updateRelationship,
-} from '../api/relationships';
+import { addRelationship, getRelationships, removeRelationship, updateRelationship } from '../api/relationships';
 import { Relationship } from '../interfaces/IRelationship';
 import { RELATIONSHIP_TYPES } from '../types/RelationShipTypes';
 
